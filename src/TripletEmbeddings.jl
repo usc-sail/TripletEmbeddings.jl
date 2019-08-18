@@ -10,7 +10,7 @@ export Embedding, ndims, nitems, J,
        Triplets, ntriplets,
        STE, tSTE, kernel,
        fit!, gradient, tgradient, tgradient!, cost, tcost,
-       scale, scale!, procrustes, procrustes!
+       procrustes, procrustes!, mse
 
 import Base: size, getindex, length, iterate, ndims, broadcast, -, *
 import Distances: pairwise
@@ -22,5 +22,6 @@ include("losses.jl")
 include("STE.jl")
 include("tSTE.jl")
 include("fit.jl")
+include("procrustes.jl")
 
 end # module

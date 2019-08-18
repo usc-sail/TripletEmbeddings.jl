@@ -1,6 +1,7 @@
 using Printf
 using Random
 using Distances
+using Distributions
 using LinearAlgebra
 
 using TripletEmbeddings
@@ -54,13 +55,25 @@ end
 end
 
 
-@testset "utilities.jl" begin
-    # Generate signal, and a scaled and translated version
-    X = rand(1,100)
-    Y = rand() * X .+ 5 * rand()
+function test_procrustes(d::Int)
+    @assert d == 1 || d == 2
 
+    n = 100
+    X = rand(d, n)
+    if d == 1
+        Y = randn() * X .+ 5 * rand()
+    else
+        θ = rand(Uniform(0, 2π))
+        R = [cos(θ) -sin(θ); sin(θ) cos(θ)]
+        Y = broadcast(+, randn() * R * X , 5 * rand(d))
+    end
     X = Embedding(X)
-    _, mse = scale(X, Y; MSE=true)
-    @test isapprox(mse, 0.0; atol=norm(mse))
-    @test_throws AssertionError procrustes(X,Y)
+    Z = procrustes(X, Y)
+
+    return mse(Z,Y)
+end
+
+@testset "procrustes.jl" begin   
+    @test isapprox(test_procrustes(1), 0.0; atol=eps())
+    @test isapprox(test_procrustes(2), 0.0; atol=eps())
 end
