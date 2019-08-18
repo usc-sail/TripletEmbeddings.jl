@@ -23,7 +23,15 @@ To use this package, you can now use:
 julia> using TripletEmbeddings
 ```
 
+### Implemented loss functions
+Currently, STE and tSTE are implemented. These can be called by
 
+```julia
+using TripletEmbeddings
+
+loss = STE(σ = 1/sqrt(2)) # or simply STE()
+loss = tSTE(α = 2) # or simply tSTE()
+```
 
 ### Examples
 #### 1D embeddings
@@ -46,7 +54,7 @@ loss = STE(σ = 1/sqrt(2))
 X = Embedding(size(Y))
 
 @time violations = fit!(loss, triplets, X; verbose=true, max_iterations=200)
-scale!(X, Y)
+procrustes!(X, Y) # Scales the embedding to the original data in Y
 
 dfX = DataFrame(embedding = "X", time = 1:n, value = X[1,:])
 dfY = DataFrame(embedding = "Y", time = 1:n, value = Y[1,:])
@@ -72,7 +80,7 @@ loss = STE(σ = 1/sqrt(2))
 X = Embedding(size(Y))
 
 @time violations = fit!(loss, triplets, X; verbose=true, max_iterations=200)
-procrustes!(X, Y)
+procrustes!(X, Y) # Scales the embedding to the original data in Y
 
 dfX = DataFrame(embedding = "X", time = 1:n, x = X[1,:], y = X[2,:])
 dfY = DataFrame(embedding = "Y", time = 1:n, x = Y[1,:], y = Y[2,:])
