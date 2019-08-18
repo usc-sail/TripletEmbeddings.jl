@@ -1,4 +1,5 @@
 using Printf
+using Random
 using Distances
 using LinearAlgebra
 
@@ -20,6 +21,11 @@ using Test
     @test nitems(X) == n
     @test ndims(X) == d
     
+    X₀ = rand(n)
+    X = Embedding(X₀)
+    @test nitems(X) == n
+    @test ndims(X) == 1
+
     @test J(d) == [0.5 -0.5; -0.5 0.5]
 end
 

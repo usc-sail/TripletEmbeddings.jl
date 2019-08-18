@@ -62,7 +62,7 @@ mutable struct Embedding{T} <: AbstractEmbedding{T}
         new{Float64}(X, X' * X)
     end
 
-    function Embedding(X₀::Matrix{T}) where T <: Real
+    function Embedding(X₀::AbstractMatrix{T}) where T <: Real
         d, n = size(X₀)
         @assert n ≥ d "n ≥ d is required"
 
@@ -70,6 +70,11 @@ mutable struct Embedding{T} <: AbstractEmbedding{T}
         X = X₀ .+ 0.0 # This forces X to be a Matrix{AbstractFloat}
 
         new{eltype(X)}(X, X' * X)
+    end
+
+    function Embedding(X₀::AbstractVector{T}) where T <: Real
+        X = reshape(X₀ .+ 0.0, 1, length(X₀)) # This forces X to be a Matrix{AbstractFloat}        
+        new{eltype(X)}(X, X' * X )
     end
 
 end
