@@ -30,20 +30,33 @@ Scale the embedding X according to the Y, such that the MSE between both is mini
     julia> X = scale(X, Y)
     julia> plot(Y')
     julia> plot(X') # Plot after rescaling X to Y
-
 """
-function scale(X::AbstractEmbedding{T}, Y::AbstractMatrix{T}; MSE::Bool=false) where T <: Real
+function scale(X::AbstractVector{T}, Y::AbstractVector{T}) where T
     # We solve the scaling problem by min || aX - Y - b||^2,
     # where (a,b) are the scale and offset parameters
-    @assert ndims(X) == 1 "ndims(X) > ndims(Y)"
-    @assert length(Y) == nitems(X) "Data needs to have the same number of elements as X"
+    @assert length(X) == length(Y) "Vector X and Y must be the same length"
+    
+    a, b = [X -ones(size(X))]\Y
+    return a * X .- b
+end
 
-    a, b = [X.X' -ones(size(X.X'))]\Y'
+function scale(X::AbstractEmbedding{T}, Y::AbstractMatrix{T}; MSE::Bool=false) where T <: Real
+    # This function calls scale(X::Vector{T}, Y::Vector{T}) where T
+    @assert ndims(X) == 1 "ndims(X) > 1. Use procrustes instead."
+    @assert ndims(X) == size(Y,1) "Dimension mismatch: ndims(X) != ndims(Y)"
+    @assert length(Y) == nitems(X) "Dimension mismatch: nitems(X) != nitems(Y)"
+
+    # We try to flatte
+    Xv = dropdims(X.X', dims=2)
+    Yv = dropdims(Y', dims=2)
+
+    # Embedding accepts a vector, that then reshapes into an 1 × n embedding
+    Z = Embedding(scale(Xv, Yv))
 
     if MSE
-        return a*X - b, norm(a*X - b .- Y)^2
+        return Z, norm(Z.X - Y)^2
     else
-        return a*X - b
+        return Z
     end
 end
 
@@ -64,16 +77,7 @@ Scale the embedding X according to the Y, such that the MSE between both is mini
 
 """
 function scale!(X::AbstractEmbedding{T}, Y::AbstractMatrix{T}) where T <: Real
-    # We solve the scaling problem by min || aX - Y - b||^2,
-    # where (a,b) are the scale and offset parameters
-    @assert ndims(X) == 1 "ndims(X) > ndims(Y)"
-    @assert length(Y) == nitems(X) "Data needs to have the same number of elements as X"
-
-    a, b = [X.X' -ones(size(X.X'))]\Y'
-
-    X.X = a*X.X .- b
-    X.G = X.X' * X.X
-    return
+    X = scale(X, Y)
 end
 
 """

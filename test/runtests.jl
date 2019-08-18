@@ -52,3 +52,15 @@ end
     data = [1 2 3; 1 2 3]
     triplets = Triplets(data)
 end
+
+
+@testset "utilities.jl" begin
+    # Generate signal, and a scaled and translated version
+    X = rand(1,100)
+    Y = rand() * X .+ 5 * rand()
+
+    X = Embedding(X)
+    _, mse = scale(X, Y; MSE=true)
+    @test isapprox(mse, 0.0; atol=norm(mse))
+    @test_throws AssertionError procrustes(X,Y)
+end
