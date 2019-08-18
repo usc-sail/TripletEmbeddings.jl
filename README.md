@@ -30,51 +30,55 @@ julia> using TripletEmbeddings
 We generate a random signal, compute its triplets, and then fit an embedding to those triplets:
 
 ```julia
-using Plots
 using Random
+using VegaLite
+using DataFrames
+using TableReader
 using TripletEmbeddings
 
 Random.seed!(4)
 
 n = 100
-data = rand(100)
+Y = rand(1, n)
 
-# Compute the triplets
-triplets = Triplets(data)
-
-# Initialize a loss function
+triplets = Triplets(Y)
 loss = STE(σ = 1/sqrt(2))
+X = Embedding(size(Y))
 
-# Initialize a random embedding
-X = Embedding(length(data), 1)
+@time violations = fit!(loss, triplets, X; verbose=true, max_iterations=200)
+scale!(X, Y)
 
-# Fit the embedding
-@time violations = fit!(loss, triplets, X; verbose=true, max_iterations=50)
+dfX = DataFrame(embedding = "X", time = 1:n, value = X[1,:])
+dfY = DataFrame(embedding = "Y", time = 1:n, value = Y[1,:])
 
-plot(data)
-plot!(scale(data, X))
+vcat(dfX, dfY) |> @vlplot(:line, x = :time, y = :value, color=:embedding, width=600, height=400)
 ```
 This code generates the following embedding:
 
 ![1D example](figures/1D.svg)
 
-#### Embeddings of dimensions 2 or greater
+#### Embeddings of 2 or more dimensions
 
 ```julia
 Random.seed!(4)
 
-n = 100; d = 2;
-data = rand(n, d)
+# We define a random Embedding in ℜ²
+d = 2
+n = 100
+Y = rand(d, n)
 
-triplets = Triplets(data)
+triplets = Triplets(Y)
 loss = STE(σ = 1/sqrt(2))
-X = Embedding(size(data))
+X = Embedding(size(Y))
 
 @time violations = fit!(loss, triplets, X; verbose=true, max_iterations=200)
-X, _ = procrustes(data, X)
+procrustes!(X, Y)
 
-scatter(data[:,1], data[:,2], label="Data")
-scatter!(X[:,1], X[:,2], label="Embedding")
+dfX = DataFrame(embedding = "X", time = 1:n, x = X[1,:], y = X[2,:])
+dfY = DataFrame(embedding = "Y", time = 1:n, x = Y[1,:], y = Y[2,:])
+
+vcat(dfX, dfY) |> @vlplot(:point, x = :x, y = :y, color=:embedding, width=600, height=400)
+
 ```
 This code generates the following embedding:
 
