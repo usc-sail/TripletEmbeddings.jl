@@ -88,6 +88,15 @@ squares sense. X should be the same size as Y.
 
 The algorithm to find the optimal rotation and translation is also known as Kabsch algorithm.
 
+---
+
+    procrustes(X::AbstractMatrix{T}, Y::AbstractMatrix{T}) where T <: Real
+
+Compute the optimal scaling, rotation, and translation for X to match Y in the least
+squares sense. X should be the same size as Y.
+
+The algorithm to find the optimal rotation and translation is also known as Kabsch algorithm.
+
 # References
     
     1. Dokmanic, I., Parhizkar, R., Ranieri, J., & Vetterli, M. (2015). Euclidean 
@@ -95,17 +104,27 @@ The algorithm to find the optimal rotation and translation is also known as Kabs
        IEEE Signal Processing Magazine, 32(6), 12-30.
 """
 function procrustes(X::AbstractEmbedding{T}, Y::AbstractMatrix{T}) where T <: Real
+    @assert nitems(X) > 1 "nitems(X) must be > 1 to use procrustes"
+    @assert ndims(X) == size(Y,2)  "ndims(X) must be equal to size(Y,2)"
+
+    X.X = procrustes(X.X, Y)
+    X.G = X.X' * X.X
+
+    return X
+end
+
+function procrustes(X::AbstractMatrix{T}, Y::AbstractMatrix{T}) where T <: Real
     # We *could* implement this for size(X) != size(Y) if needed...
     @assert size(X) == size(Y) "X and Y must be the same size"
 
     # Find the number of columns
-    n = nitems(X)
+    n = size(X,2) # Number of columns in X
     m = size(Y,2) # Number of columns in Y
 
     # Center both embeddings
     # The subscript for c is not defined in unicode :-(, so we use superscripts
-    Xᶜ = X * J(nitems(X)) # Centers the (columns of the) Embedding
-    Yᶜ = Y * J(nitems(X)) # Centers the (columns of the) Embedding
+    Xᶜ = X * J(n) # Centers the (columns of the) Embedding
+    Yᶜ = Y * J(m) # Centers the (columns of the) Embedding
 
     # We use the SVD to find the optimal rotation matrix
     U, S, V = svd(Xᶜ * Yᶜ')
@@ -117,11 +136,12 @@ function procrustes(X::AbstractEmbedding{T}, Y::AbstractMatrix{T}) where T <: Re
     s = norm(Yᶜ) / norm(Xᶜ)
     
     # We finally scale, rotate, and translate our embedding to match Y as best as possible
-    X.X = broadcast(+, s * R * Xᶜ, yᶜ)
-    X.G = X.X' * X.X
+    return broadcast(+, s * R * Xᶜ, yᶜ)
+end
 
-    return X
 
+function procrustes!(X::AbstractMatrix{T}, Y::AbstractMatrix{T}) where T <: Real
+    X = procrustes(X, Y)
 end
 
 function procrustes!(X::AbstractEmbedding{T}, Y::AbstractMatrix{T}) where T <: Real
