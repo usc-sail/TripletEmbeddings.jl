@@ -97,7 +97,7 @@ Base.:*(X::AbstractEmbedding, a::Real) = Embedding(a * X.X)
 """
     ndims(X::AbstractEmbedding)
 
-Obtain the number of dimensinos in the Embedding X. If X is d × n,
+Obtain the number of dimensions in the Embedding X. If X is d × n,
 ndims(X) returns d.
 
 # Examples
