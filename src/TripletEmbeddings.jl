@@ -4,6 +4,7 @@ using Printf
 using Random
 using Distances
 using Statistics: mean
+using Distributions
 using LinearAlgebra
 
 export Embedding, ndims, nitems, J,
