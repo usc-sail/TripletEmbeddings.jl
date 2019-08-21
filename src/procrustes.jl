@@ -55,7 +55,6 @@ function procrustes(X::AbstractEmbedding{T}, Y::Matrix{T}) where T <: Real
     @assert ndims(X) == size(Y,1)  "ndims(X) must be equal to size(Y,2)"
 
     X.X, _ = procrustes(X.X, Y)
-    X.G = X.X' * X.X
 
     return X
 end

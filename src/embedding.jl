@@ -6,7 +6,6 @@ abstract type AbstractEmbedding{T} <: AbstractMatrix{T} end
 
 # Fields
     X::Matrix{T} # Embedding  (each column is an item of the Embedding)
-    G::Matrix{T} # Gram matrix associated to X
 
 # Examples
 Building an embedding from the desired dimensions:
@@ -39,27 +38,26 @@ If eltype(X₀) == Int, an AbstractFloat is forced.
 """
 mutable struct Embedding{T} <: AbstractEmbedding{T}
     X::Matrix{T} # Embedding 
-    G::Matrix{T} # Gram matrix associated to X
 
     function Embedding(d::Int, n::Int)
         @assert n ≥ d "n ≥ d is required"
 
         X = rand(d, n)
         
-        new{eltype(X)}(X, X' * X)
+        new{eltype(X)}(X)
     end
 
     function Embedding(t::Tuple{Int,Int})
         @assert t[2] ≥ t[1] "n ≥ d is required"
 
         X = rand(Float64, t)
-        new{Float64}(X, X' * X)
+        new{Float64}(X)
     end
 
     function Embedding(t::Tuple{Int})
         X = rand(Float64, t)
         X = reshape(X, length(X), 1)
-        new{Float64}(X, X' * X)
+        new{Float64}(X)
     end
 
     function Embedding(X₀::AbstractMatrix{T}) where T <: Real
@@ -69,30 +67,23 @@ mutable struct Embedding{T} <: AbstractEmbedding{T}
         # X = X₀ * V(d)
         X = X₀ .+ 0.0 # This forces X to be a Matrix{AbstractFloat}
 
-        new{eltype(X)}(X, X' * X)
+        new{eltype(X)}(X)
     end
 
     function Embedding(X₀::AbstractVector{T}) where T <: Real
         X = reshape(X₀ .+ 0.0, 1, length(X₀)) # This forces X to be a Matrix{AbstractFloat}        
-        new{eltype(X)}(X, X' * X )
+        new{eltype(X)}(X)
     end
 
 end
 
 Base.size(X::AbstractEmbedding) = size(X.X)
 Base.getindex(X::AbstractEmbedding, inds...) = getindex(X.X, inds...)
-function Base.:-(X::AbstractEmbedding, M::AbstractMatrix)
-    X.X -= M
-    G = X.X' * X.X
-    return X
-end
-function Base.:-(X::AbstractEmbedding, b::Real)
-    X.X .-= b
-    G = X.X' * X.X
-    return X
-end
-Base.:*(a::Real, X::AbstractEmbedding) = Embedding(a * X.X)
-Base.:*(X::AbstractEmbedding, a::Real) = Embedding(a * X.X)
+
+function Base.:-(X::AbstractEmbedding, M::AbstractMatrix) X.X -= M; return X; end
+function Base.:-(X::AbstractEmbedding, b::Real); X.X .-= b; return X; end
+function Base.:*(a::Real, X::AbstractEmbedding); a * X.X; return X; end
+function Base.:*(X::AbstractEmbedding, a::Real); a * X.X; return X; end
 
 """
     ndims(X::AbstractEmbedding)
