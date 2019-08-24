@@ -11,7 +11,9 @@ struct Triplets{T} <: AbstractArray{T,1}
     triplets::Vector{T}
 
     function Triplets(X::AbstractMatrix{T}) where T
-        new{Tuple{Int,Int,Int}}(label(X))
+        triplets = label(X)
+        @assert checktriplets(triplets) "Triplets do not contain all items"
+        new{Tuple{Int,Int,Int}}(triplets)
     end
 
     function Triplets(X::AbstractVector{T}) where T
@@ -20,9 +22,18 @@ struct Triplets{T} <: AbstractArray{T,1}
     end
 
     function Triplets(triplets::Vector{Tuple{Int,Int,Int}})
+        @assert checktriplets(triplets) "Triplets do not contain all items"
         new{Tuple{Int,Int,Int}}(triplets)
     end
 
+end
+
+function checktriplets(triplets::Matrix{Int})
+    return sort(unique(triplets)) == 1:maximum(triplets)
+end
+
+function checktriplets(triplets::Array{Tuple{Int64,Int64,Int64},1})
+    return checktriplets(getindex.(triplets, [1 2 3]))
 end
 
 Base.size(triplets::Triplets) = size(triplets.triplets)
