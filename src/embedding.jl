@@ -42,7 +42,7 @@ mutable struct Embedding{T} <: AbstractEmbedding{T}
     function Embedding(d::Int, n::Int)
         @assert n ≥ d "n ≥ d is required"
 
-        X = rand(d, n)
+        X = randn(d, n)
         
         new{eltype(X)}(X)
     end
@@ -50,12 +50,12 @@ mutable struct Embedding{T} <: AbstractEmbedding{T}
     function Embedding(t::Tuple{Int,Int})
         @assert t[2] ≥ t[1] "n ≥ d is required"
 
-        X = rand(Float64, t)
+        X = randn(Float64, t)
         new{Float64}(X)
     end
 
     function Embedding(t::Tuple{Int})
-        X = rand(Float64, t)
+        X = randn(Float64, t)
         X = reshape(X, length(X), 1)
         new{Float64}(X)
     end
