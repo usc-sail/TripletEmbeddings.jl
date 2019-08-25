@@ -80,11 +80,6 @@ end
 Base.size(X::AbstractEmbedding) = size(X.X)
 Base.getindex(X::AbstractEmbedding, inds...) = getindex(X.X, inds...)
 
-function Base.:-(X::AbstractEmbedding, M::AbstractMatrix) X.X -= M; return X; end
-function Base.:-(X::AbstractEmbedding, b::Real); X.X .-= b; return X; end
-function Base.:*(a::Real, X::AbstractEmbedding); a * X.X; return X; end
-function Base.:*(X::AbstractEmbedding, a::Real); a * X.X; return X; end
-
 """
     ndims(X::AbstractEmbedding)
 

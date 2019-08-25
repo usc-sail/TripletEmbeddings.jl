@@ -8,7 +8,7 @@ function fit!(
 )
 
     @assert max_iterations >= 10 "Iterations must be at least 10"
-    @assert maximum([maximum(t) for t in triplets]) == nitems(X)
+    # @assert maximum([maximum(t) for t in triplets]) == nitems(X)
     
     if verbose
         println("Fitting embedding with loss $(typeof(loss))")
@@ -39,7 +39,7 @@ function fit!(
         C, ∇C = gradient(loss, triplets, X)
 
         # Update the embedding according to the gradient
-        X = X - (η / ntriplets(triplets) * nitems(X)) * ∇C
+        X.X = X.X .- (η / ntriplets(triplets) * nitems(X)) * ∇C
 
         if C < best_C
             best_C = C
