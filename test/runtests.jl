@@ -16,8 +16,6 @@ using Test
     @test size(Embedding([1 0; 0 1])) == (2,2)
     @test size(Embedding((1,10))) == (1,10)
     @test eltype(Embedding([1 1; 1 1])) <: AbstractFloat # This is needed for kernel(loss, X)
-
-    @test issymmetric(X.G)
     
     @test nitems(X) == n
     @test ndims(X) == d
@@ -41,6 +39,8 @@ end
 
     @test size(triplets) == (2,)
     @test length(triplets) == 2
+
+    @test_throws AssertionError Triplets([(1,2,3), (1,2,5)])
 end
 
 @testset "STE.jl" begin
