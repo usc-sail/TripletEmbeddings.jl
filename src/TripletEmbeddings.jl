@@ -8,7 +8,7 @@ using Distributions
 using LinearAlgebra
 
 export Embedding, ndims, nitems, J,
-       Triplets, ntriplets,
+       Triplets, ntriplets, checktriplets,
        STE, tSTE, kernel,
        fit!, gradient, tgradient, tgradient!, cost, tcost,
        procrustes, procrustes!, mse

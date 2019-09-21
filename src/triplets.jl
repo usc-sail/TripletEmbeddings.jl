@@ -28,12 +28,19 @@ struct Triplets{T} <: AbstractArray{T,1}
 
 end
 
-function checktriplets(triplets::Matrix{Int})
-    return sort(unique(triplets)) == 1:maximum(triplets)
+"""
+    checktriplets(triplets::Array{Vector{Int64,Int64,Int64}})
+
+Checks whether triplets contains all elements from 1:n, where n is the maximum
+value found in triplets.
+"""
+function checktriplets(triplets::Vector{Tuple{Int64,Int64,Int64}})
+    # Transform triplets into Matrix{Int} and call respective function
+    return checktriplets(getindex.(triplets, [1 2 3]))
 end
 
-function checktriplets(triplets::Array{Tuple{Int64,Int64,Int64},1})
-    return checktriplets(getindex.(triplets, [1 2 3]))
+function checktriplets(triplets::Matrix{Int})
+    return sort(unique(triplets)) == 1:maximum(triplets)
 end
 
 Base.size(triplets::Triplets) = size(triplets.triplets)
