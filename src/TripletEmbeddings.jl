@@ -2,6 +2,7 @@ module TripletEmbeddings
 
 using Printf
 using Random
+using Logging
 using Distances
 using Statistics: mean
 using Distributions

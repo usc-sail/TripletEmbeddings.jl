@@ -3,21 +3,12 @@ function fit!(
     triplets::Triplets,
     X::AbstractEmbedding;
     verbose::Bool = true,
-    max_iterations::Int64 = 1000,
-    debug::Bool = false
+    max_iterations::Int64 = 1000
 )
 
     @assert max_iterations >= 10 "Iterations must be at least 10"
     # @assert maximum([maximum(t) for t in triplets]) == nitems(X)
     
-    if verbose
-        println("Fitting embedding with loss $(typeof(loss))")
-    end
-
-    if debug
-        iteration_Xs = zeros(Float64, ndims(X), nitems(X), max_iterations)
-    end   
-
     C = Inf                      # Cost
     ∇C = zeros(Float64, size(X)) # Gradient
 
@@ -40,15 +31,11 @@ function fit!(
 
         # Update the embedding according to the gradient
         X.X = X.X .- (η / ntriplets(triplets) * nitems(X)) * ∇C
+        # X.X = X.X/norm(X.X)
 
         if C < best_C
             best_C = C
             best_X = X
-        end
-
-        # Save each iteration if indicated
-        if debug
-            iteration_Xs[:,:,niterations] = X.X
         end
 
         # Update learning rate
@@ -62,21 +49,23 @@ function fit!(
 
         # Print out progress
         if verbose && (niterations % 10 == 0)
+            # If we have a large number of triplets, computing the number of violations
+            # can be costly. Therefore, we only perform this operation every 10 iterations
+            # If more details are needed, you can set the environment variable
+            # JULIA_DEBUG=TripletEmbeddings before starting Julia.
             pviolations = percent_violations(triplets, X)
-            @printf("iteration # = %d, cost = %.2f, violations = %.2f %%\n", niterations, C, 100 * pviolations)
+            @info @sprintf "loss = %s, iteration = %d, cost = %.2f, violations = %.2f%%" typeof(loss) niterations C 100 * pviolations
         end
+
+        @debug "Iteration = $niterations, Cost = $C, nincrements = $nincrements" X.X percent_violations(triplets, X)
     end
 
     if !verbose
         pviolations = percent_violations(triplets, X)
     end
-
-    if debug
-        return iteration_Xs[:,:,1:no_iterations], pviolations
-    else
-        X = best_X
-        return pviolations
-    end
+    
+    X = best_X
+    return pviolations
 end
 
 function percent_violations(triplets::Triplets, X::AbstractEmbedding)
