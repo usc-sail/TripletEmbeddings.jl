@@ -9,11 +9,11 @@ struct LinearTransformation{T}
 end
 
 """
-    apply(tr::LinearTransformation, X::Matrix{T}) where T <: Real
+    apply(tr::LinearTransformation, X::Union{Vector{T},Matrix{T}}) where T <: Real
 
-Apply a linear transformation (scaling, rotation, and bias) to the matrix X.
+Apply a linear transformation (scaling, rotation, and bias) to the vector or matrix X.
 """
-function apply(tr::LinearTransformation, X::Matrix{T}) where T <: Real
+function apply(tr::LinearTransformation, X::Union{Vector{T},Matrix{T}}) where T <: Real
     Xᶜ = X * J(size(X, 2)) # Centers the (columns of the) matrix
     return broadcast(+, tr.s * tr.R * Xᶜ, tr.b)
 end
@@ -50,7 +50,7 @@ The algorithm to find the optimal rotation and translation is also known as Kabs
        distance matrices: essential theory, algorithms, and applications.
        IEEE Signal Processing Magazine, 32(6), 12-30.
 """
-function procrustes(X::AbstractEmbedding{T}, Y::Matrix{T}) where T <: Real
+function procrustes(X::AbstractEmbedding{T}, Y::AbstractMatrix{T}) where T <: Real
     # @assert nitems(X) > 1 "nitems(X) must be > 1 to use procrustes"
     @assert ndims(X) == size(Y,1)  "ndims(X) must be equal to size(Y,2)"
 
@@ -59,17 +59,17 @@ function procrustes(X::AbstractEmbedding{T}, Y::Matrix{T}) where T <: Real
     return X
 end
 
-function procrustes!(X::AbstractEmbedding{T}, Y::Matrix{T}) where T <: Real
+function procrustes!(X::AbstractEmbedding{T}, Y::AbstractMatrix{T}) where T <: Real
     X, _ = procrustes(X, Y)
 end
 
-function procrustes(X::Matrix{T}, Y::Matrix{T}) where T <: Real
+function procrustes(X::Matrix{T}, Y::AbstractMatrix{T}) where T <: Real
     # We *could* implement this for size(X) != size(Y) if needed...
-    @assert size(X) == size(Y) "X and Y must be the same size"
+    # @assert size(X) == size(Y) "X and Y must be the same size"
 
     # Find the number of columns
-    n = size(X,2) # Number of columns in X
-    m = size(Y,2) # Number of columns in Y
+    n = size(X, 2) # Number of columns in X
+    m = size(Y, 2) # Number of columns in Y
 
     # Center both embeddings
     # The subscript for c is not defined in unicode :-(, so we use superscripts
