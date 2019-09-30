@@ -12,7 +12,7 @@ export Embedding, ndims, nitems, J,
        Triplets, ntriplets, checktriplets,
        STE, tSTE, kernel,
        fit!, gradient, tgradient, tgradient!, cost, tcost,
-       procrustes, procrustes!, mse
+       procrustes, procrustes!, mse, apply
 
 import Base: size, getindex, length, iterate, ndims, broadcast, -, *
 import Distances: pairwise
