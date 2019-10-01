@@ -73,19 +73,11 @@ mutable struct Embedding{T} <: AbstractEmbedding{T}
         # X = X₀ * V(d)
         X = X₀ .+ 0.0 # This forces X to be a Matrix{AbstractFloat}
 
-        if norm(X) > 1
-          @warn "Norm of X might be too large for initialization. Values should be O(1e-5)."
-        end
-
         new{eltype(X)}(X)
     end
 
     function Embedding(X₀::AbstractVector{T}) where T <: Real
         X = reshape(X₀ .+ 0.0, 1, length(X₀)) # This forces X to be a Matrix{AbstractFloat}        
-   
-        if norm(X) > 1
-          @warn "Norm of X might be too large for initialization. Values should be O(1e-5)."
-        end
 
         new{eltype(X)}(X)
     end
