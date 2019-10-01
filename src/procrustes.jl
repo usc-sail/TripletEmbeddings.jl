@@ -8,12 +8,23 @@ struct LinearTransformation{T}
     end
 end
 
-"""
-    apply(tr::LinearTransformation, X::Union{Vector{T},Matrix{T}}) where T <: Real
+function Base.show(io::IO, ::MIME"text/plain", tr::LinearTransformation)
+    print("s = ")
+    show(io, "text/plain", tr.s)
+    println()
+    print("R = ")
+    show(io, "text/plain", tr.R)
+    println()
+    print("b = ")
+    show(io, "text/plain", tr.b)
+end
 
-Apply a linear transformation (scaling, rotation, and bias) to the vector or matrix X.
 """
-function apply(tr::LinearTransformation, X::Union{Vector{T},Matrix{T}}) where T <: Real
+    apply(tr::LinearTransformation, X::Matrix{T}) where T <: Real
+
+Apply a linear transformation (scaling, rotation, and bias) to the matrix X.
+"""
+function apply(tr::LinearTransformation, X::Matrix{T}) where T <: Real
     Xᶜ = X * J(size(X, 2)) # Centers the (columns of the) matrix
     return broadcast(+, tr.s * tr.R * Xᶜ, tr.b)
 end
@@ -24,7 +35,8 @@ end
 Apply a linear transformation (scaling, rotation, and bias) to the Embedding X.
 """
 function apply(tr::LinearTransformation, X::AbstractEmbedding{T}) where T <: Real
-    return Embedding(apply(tr, X.X))
+    X.X = apply(tr, X.X)
+    return X
 end
 
 """
@@ -71,7 +83,7 @@ function procrustes(X::Matrix{T}, Y::AbstractMatrix{T}) where T <: Real
     n = size(X, 2) # Number of columns in X
     m = size(Y, 2) # Number of columns in Y
 
-    # Center both embeddings
+    # Center both embeddings (so that the sum of their columns is the zeros vector)
     # The subscript for c is not defined in unicode :-(, so we use superscripts
     Xᶜ = X * J(n) # Centers the (columns of the) Embedding
     Yᶜ = Y * J(m) # Centers the (columns of the) Embedding
@@ -87,7 +99,7 @@ function procrustes(X::Matrix{T}, Y::AbstractMatrix{T}) where T <: Real
 
     transform = LinearTransformation(s, R, yᶜ)
     
-    # We finally scale, rotate, and translate our embedding to match Y as best as possible
+    # We finally scale, rotate, and translate the embedding X to match Y as best as possible
     return apply(transform, X), transform
 end
 
