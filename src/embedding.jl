@@ -42,7 +42,7 @@ mutable struct Embedding{T} <: AbstractEmbedding{T}
     function Embedding(d::Int, n::Int)
         @assert n ≥ d "n ≥ d is required"
 
-        X = randn(d, n)
+        X = 0.0001 * randn(d, n)
         
         new{eltype(X)}(X)
     end
@@ -50,13 +50,19 @@ mutable struct Embedding{T} <: AbstractEmbedding{T}
     function Embedding(t::Tuple{Int,Int})
         @assert t[2] ≥ t[1] "n ≥ d is required"
 
-        X = randn(Float64, t)
+        X = 0.0001 * randn(Float64, t)
+
         new{Float64}(X)
     end
 
     function Embedding(t::Tuple{Int})
         X = randn(Float64, t)
         X = reshape(X, length(X), 1)
+        
+        if norm(X) > 1
+          @warn "Norm of X might be too large for initialization. Values should be O(1e-5)."
+        end
+
         new{Float64}(X)
     end
 
@@ -67,11 +73,20 @@ mutable struct Embedding{T} <: AbstractEmbedding{T}
         # X = X₀ * V(d)
         X = X₀ .+ 0.0 # This forces X to be a Matrix{AbstractFloat}
 
+        if norm(X) > 1
+          @warn "Norm of X might be too large for initialization. Values should be O(1e-5)."
+        end
+
         new{eltype(X)}(X)
     end
 
     function Embedding(X₀::AbstractVector{T}) where T <: Real
         X = reshape(X₀ .+ 0.0, 1, length(X₀)) # This forces X to be a Matrix{AbstractFloat}        
+   
+        if norm(X) > 1
+          @warn "Norm of X might be too large for initialization. Values should be O(1e-5)."
+        end
+
         new{eltype(X)}(X)
     end
 
