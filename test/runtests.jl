@@ -58,7 +58,7 @@ end
 end
 
 
-function test_procrustes(d::Int)
+function test_insample(d::Int)
     @assert d == 1 || d == 2
 
     n = 100
@@ -71,12 +71,26 @@ function test_procrustes(d::Int)
         Y = broadcast(+, randn() * R * X , 5 * rand(d))
     end
     X = Embedding(X)
-    Z = procrustes(X, Y)
+    Z, transform = procrustes(X, Y)
 
-    return mse(Z,Y)
+    return mse(Z, Y)
+end
+
+function test_outofsample()
+    Y = broadcast(+, [1 1 -1 -1; 1 -1 1 -1], [2, 2])
+    s = rand()
+    θ = rand()
+    R = [cos(θ) -sin(θ); sin(θ) cos(θ)]
+    b = rand(2)
+    X = [Y mean(Y, dims=2)]
+    X = broadcast(+, s * R * X, b)
+
+    _, transform = procrustes(X[:,1:end-1], Y)
+    return mean(Y, dims=2) ≈ apply(transform, X[:,end])
 end
 
 @testset "procrustes.jl" begin   
-    @test isapprox(test_procrustes(1), 0.0; atol=eps())
-    @test isapprox(test_procrustes(2), 0.0; atol=eps())
+    @test isapprox(test_insample(1), 0.0; atol=eps())
+    @test isapprox(test_insample(2), 0.0; atol=eps())
+    @test test_outofsample()
 end

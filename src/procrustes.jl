@@ -25,8 +25,9 @@ end
 Apply a linear transformation (scaling, rotation, and bias) to the matrix X.
 """
 function apply(tr::LinearTransformation, X::Matrix{T}) where T <: Real
-    Xᶜ = X * J(size(X, 2)) # Centers the (columns of the) matrix
-    return broadcast(+, tr.s * tr.R * Xᶜ, tr.b)
+    # Xᶜ = X * J(size(X, 2)) # Centers the (columns of the) matrix
+    # return broadcast(+, tr.s * tr.R * Xᶜ, tr.b)
+    return broadcast(+, tr.s * tr.R * X, tr.b)
 end
 
 """
@@ -37,6 +38,16 @@ Apply a linear transformation (scaling, rotation, and bias) to the Embedding X.
 function apply(tr::LinearTransformation, X::AbstractEmbedding{T}) where T <: Real
     X.X = apply(tr, X.X)
     return X
+end
+
+"""
+    apply(tr::LinearTransformation, X::Matrix{T}, x::Vector{T}) where T <: Real
+
+Apply an out-of-sample linear transformation (scaling, rotation, and bias) to the vector x,
+where the transformation has been computed for the matrix X.
+"""
+function apply(tr::LinearTransformation, X::Vector{T}) where T<:Real
+    return broadcast(+, tr.s * tr.R * X, tr.b)
 end
 
 """
@@ -62,22 +73,18 @@ The algorithm to find the optimal rotation and translation is also known as Kabs
        distance matrices: essential theory, algorithms, and applications.
        IEEE Signal Processing Magazine, 32(6), 12-30.
 """
-function procrustes(X::AbstractEmbedding{T}, Y::AbstractMatrix{T}) where T <: Real
-    # @assert nitems(X) > 1 "nitems(X) must be > 1 to use procrustes"
-    @assert ndims(X) == size(Y,1)  "ndims(X) must be equal to size(Y,2)"
-
-    X.X, _ = procrustes(X.X, Y)
-
-    return X
+function procrustes(X::AbstractEmbedding{T1}, Y::AbstractMatrix{T2}) where {T1 <: Real, T2 <: Real}
+    X.X, transform = procrustes(X.X, Y)
+    return X, transform
 end
 
-function procrustes!(X::AbstractEmbedding{T}, Y::AbstractMatrix{T}) where T <: Real
+function procrustes!(X::AbstractEmbedding{T1}, Y::AbstractMatrix{T2}) where {T1 <: Real, T2 <: Real}
     X, _ = procrustes(X, Y)
 end
 
-function procrustes(X::Matrix{T}, Y::AbstractMatrix{T}) where T <: Real
+function procrustes(X::Matrix{T1}, Y::AbstractMatrix{T2}) where {T1 <: Real, T2 <: Real}
     # We *could* implement this for size(X) != size(Y) if needed...
-    # @assert size(X) == size(Y) "X and Y must be the same size"
+    @assert size(X) == size(Y) "X and Y must be the same size"
 
     # Find the number of columns
     n = size(X, 2) # Number of columns in X
@@ -94,11 +101,12 @@ function procrustes(X::Matrix{T}, Y::AbstractMatrix{T}) where T <: Real
 
     # We can now find the best scaling, after the embeddings are centered and
     # have the same orientation. The scaling is found by solving min_s ||s * X - Y||_F^2
-    yᶜ = Y * ones(m)/m
     s = norm(Yᶜ) / norm(Xᶜ)
 
-    transform = LinearTransformation(s, R, yᶜ)
-    
+    # We finally compute the bias
+    b = Y * ones(m)/m # Equivalent to mean(Y, dims=2), the mean over the columns of Y    
+
+    transform = LinearTransformation(s, R, dropdims(- s * R * mean(X, dims=2) + b, dims=2))
     # We finally scale, rotate, and translate the embedding X to match Y as best as possible
     return apply(transform, X), transform
 end
