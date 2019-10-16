@@ -56,10 +56,9 @@ mutable struct Embedding{T} <: AbstractEmbedding{T}
     end
 
     function Embedding(t::Tuple{Int}; σ::Float64=0.0001)
-        X = σ * randn(Float64, t)
-        X = reshape(X, length(X), 1)
+        X = σ * randn(Float64, 1, t[1])
         
-        if norm(X) > 1
+        if maximum(X) > 1e-3
           @warn "Norm of X might be too large for initialization. Values should be O(1e-5)."
         end
 
