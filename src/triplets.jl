@@ -17,7 +17,7 @@ struct Triplets{T} <: AbstractArray{T,1}
     end
 
     function Triplets(X::AbstractVector{T}) where T
-        @assert length(x) > 1 "Number of elements in X must be > 1"
+        @assert length(X) > 1 "Number of elements in X must be > 1"
         Triplets(reshape(X, 1, length(X)))
     end
 
