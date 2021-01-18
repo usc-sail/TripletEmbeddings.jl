@@ -4,11 +4,13 @@ using Printf
 using Random
 using Logging
 using Distances
+using StatsFuns
 using Statistics: mean
-using Distributions
+using SparseArrays
 using LinearAlgebra
 
-export Embedding, ndims, nitems, J,
+
+export Embedding, ndims, nitems, V, Gram, L,
        Triplets, ntriplets, checktriplets,
        STE, tSTE, kernel,
        fit!, gradient, tgradient, tgradient!, cost, tcost,

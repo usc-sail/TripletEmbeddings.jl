@@ -16,16 +16,18 @@ using Test
     @test size(Embedding([1 0; 0 1])) == (2,2)
     @test size(Embedding((1,10))) == (1,10)
     @test eltype(Embedding([1 1; 1 1])) <: AbstractFloat # This is needed for kernel(loss, X)
-    
+
     @test nitems(X) == n
     @test ndims(X) == d
-    
+
     X₀ = rand(n)
     X = Embedding(X₀)
     @test nitems(X) == n
     @test ndims(X) == 1
 
-    @test J(d) == [0.5 -0.5; -0.5 0.5]
+    @test V(d) == [0.5 -0.5; -0.5 0.5]
+
+    @test  L(3, (1,2,3)) == [0.0 -1.0 1.0; -1.0 1.0 0.0; 1.0 0.0 -1.0]
 end
 
 @testset "triplets.jl" begin
@@ -42,8 +44,6 @@ end
 
     triplets = [(1,2,3), (1,2,5)]
     @test checktriplets(triplets) == false
-    @test_throws AssertionError Triplets([(1,2,3), (1,2,5)])
-
 end
 
 @testset "STE.jl" begin
@@ -56,7 +56,6 @@ end
     data = [1 2 3; 1 2 3]
     triplets = Triplets(data)
 end
-
 
 function test_insample(d::Int)
     @assert d == 1 || d == 2
@@ -89,7 +88,7 @@ function test_outofsample()
     return mean(Y, dims=2) ≈ apply(transform, X[:,end])
 end
 
-@testset "procrustes.jl" begin   
+@testset "procrustes.jl" begin
     @test isapprox(test_insample(1), 0.0; atol=eps())
     @test isapprox(test_insample(2), 0.0; atol=eps())
     @test test_outofsample()

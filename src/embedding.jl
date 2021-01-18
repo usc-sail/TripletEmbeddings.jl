@@ -1,8 +1,8 @@
-abstract type AbstractEmbedding{T} <: AbstractMatrix{T} end
+# abstract type Matrix{T} <: AbstractMatrix{T} end
 
 """
 # Summary
-    Embedding{T} <: AbstractEmbedding{T}
+    Embedding{T} <: AbstractMatrix{T}
 
 # Fields
     X::Matrix{T} # Embedding  (each column is an item of the Embedding)
@@ -36,14 +36,14 @@ We assume that the points are in a d × n matrix, where
 
 If eltype(X₀) == Int, an AbstractFloat is forced.
 """
-mutable struct Embedding{T} <: AbstractEmbedding{T}
-    X::Matrix{T} # Embedding 
+mutable struct Embedding{T} <: AbstractMatrix{T}
+    X::Matrix{T} # Embedding
 
     function Embedding(d::Int, n::Int; σ::Float64=0.0001)
         @assert n ≥ d "n ≥ d is required"
 
         X = σ * randn(d, n)
-        
+
         new{eltype(X)}(X)
     end
 
@@ -57,7 +57,7 @@ mutable struct Embedding{T} <: AbstractEmbedding{T}
 
     function Embedding(t::Tuple{Int}; σ::Float64=0.0001)
         X = σ * randn(Float64, 1, t[1])
-        
+
         if maximum(X) > 1e-3
           @warn "Norm of X might be too large for initialization. Values should be O(1e-5)."
         end
@@ -76,18 +76,18 @@ mutable struct Embedding{T} <: AbstractEmbedding{T}
     end
 
     function Embedding(X₀::AbstractVector{T}) where T <: Real
-        X = reshape(X₀ .+ 0.0, 1, length(X₀)) # This forces X to be a Matrix{AbstractFloat}        
+        X = reshape(X₀ .+ 0.0, 1, length(X₀)) # This forces X to be a Matrix{AbstractFloat}
 
         new{eltype(X)}(X)
     end
 
 end
 
-Base.size(X::AbstractEmbedding) = size(X.X)
-Base.getindex(X::AbstractEmbedding, inds...) = getindex(X.X, inds...)
+Base.size(X::Embedding) = size(X.X)
+Base.getindex(X::Embedding, inds...) = getindex(X.X, inds...)
 
 """
-    ndims(X::AbstractEmbedding)
+    ndims(X::Matrix)
 
 Obtain the number of dimensions in the Embedding X. If X is d × n,
 ndims(X) returns d.
@@ -98,10 +98,10 @@ ndims(X) returns d.
     julia> ndims(X)
     2
 """
-Base.ndims(X::AbstractEmbedding) = size(X,1)
+Base.ndims(X::Embedding) = size(X,1)
 
 """
-    nitems(X::AbstractEmbedding)
+    nitems(X::Matrix)
 
 Obtain the number of items in the Embedding X. If X is d × n,
 nitems(X) returns n.
@@ -112,17 +112,17 @@ nitems(X) returns n.
     julia> nitems(X)
     10
 """
-nitems(X::AbstractEmbedding) = size(X,2)
+nitems(X::Embedding) = size(X,2)
 
 """
-    J(n::Int)
+    V(n::Int)
 
 Compute a normalizing matrix of dimension n. The matrix V centers the rows or columns
 of a matrix that is pre or post-multiplied by V.
 
 # Examples
-    
-    julia> J(10)
+
+    julia> V(10)
     10×10 Array{Float64,2}:
       0.9  -0.1  -0.1  -0.1  -0.1  -0.1  -0.1  -0.1  -0.1  -0.1
      -0.1   0.9  -0.1  -0.1  -0.1  -0.1  -0.1  -0.1  -0.1  -0.1
@@ -138,19 +138,32 @@ of a matrix that is pre or post-multiplied by V.
 ---
 
     julia> using Statistics: mean
-    
+
     julia> A = rand(2,2); mean(A, dims=1)
     1×2 Array{Float64,2}:
      0.502544  0.538744
 
-    julia> mean(J(2)*A, dims=1)
+    julia> mean(V(2)*A, dims=1)
     1×2 Array{Float64,2}:
      0.0  0.0
 
-    julia> mean(A*J(2), dims=2)
+    julia> mean(A*V(2), dims=2)
     2×1 Array{Float64,2}:
      0.0
      0.0
 
 """
-J(n::Int) = Matrix(I, n, n) - ones(n,n)/n
+V(n::Int) = Matrix(I, n, n) - ones(n,n)/n
+
+Gram(X::Embedding) = X'X
+
+function L(n::Int, (i,j,k))
+  L_t = spzeros(n,n)
+  L_t[i,j] = -1
+  L_t[i,k] = 1
+  L_t[j,i] = -1
+  L_t[j,j] = 1
+  L_t[k,i] = 1
+  L_t[k,k] = -1
+  return L_t
+end

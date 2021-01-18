@@ -40,21 +40,24 @@ We generate a random signal, compute its triplets, and then fit an embedding to 
 ```julia
 using Random
 using VegaLite
+using StatsFuns
 using DataFrames
 using TableReader
+using Distributions
 using TripletEmbeddings
 
 Random.seed!(4)
 
 n = 100
-Y = rand(1, n)
+Y = 2*rand(1,n) .- 1
 
-triplets = Triplets(Y)
+# Triplets accepts a function that drives the triplet labeling error. In this case, the logistic function is used
+triplets = Triplets(Y; f = x -> logistic(20x))
 loss = STE(σ = 1/sqrt(2))
 X = Embedding(size(Y))
 
-@time violations = fit!(loss, triplets, X; verbose=true, max_iterations=200)
-procrustes!(X, Y) # Scales the embedding to the original data in Y
+@time violations = fit!(loss, triplets, X; verbose=true, max_iterations=1000)
+procrustes!(X, Y)
 
 dfX = DataFrame(embedding = "X", time = 1:n, value = X[1,:])
 dfY = DataFrame(embedding = "Y", time = 1:n, value = Y[1,:])
@@ -68,6 +71,14 @@ This code generates the following embedding:
 #### Embeddings of 2 or more dimensions
 
 ```julia
+using Plots
+using Random
+using VegaLite
+using DataFrames
+using TableReader
+using LinearAlgebra
+using TripletEmbeddings
+
 Random.seed!(4)
 
 # We define a random Embedding in ℜ²
@@ -80,13 +91,14 @@ loss = STE(σ = 1/sqrt(2))
 X = Embedding(size(Y))
 
 @time violations = fit!(loss, triplets, X; verbose=true, max_iterations=200)
-procrustes!(X, Y) # Scales the embedding to the original data in Y
+procrustes!(X, Y)
+
+scatter(Y[1,:], Y[2,:]); scatter!(X[1,:], X[2,:])
 
 dfX = DataFrame(embedding = "X", time = 1:n, x = X[1,:], y = X[2,:])
 dfY = DataFrame(embedding = "Y", time = 1:n, x = Y[1,:], y = Y[2,:])
 
 vcat(dfX, dfY) |> @vlplot(:point, x = :x, y = :y, color=:embedding, width=600, height=400)
-
 ```
 This code generates the following embedding:
 

@@ -11,7 +11,7 @@ struct tSTE <: AbstractLoss
 
 end
 
-function kernel(loss::tSTE, X::AbstractEmbedding)
+function kernel(loss::tSTE, X::Embedding)
     K = pairwise(SqEuclidean(), X, dims=2)
     Q = zeros(Float64, nitems(X), nitems(X))
 
@@ -26,7 +26,7 @@ function kernel(loss::tSTE, X::AbstractEmbedding)
     return K, Q
 end
 
-# function tcost(loss::STE, triplet::Tuple{Int,Int,Int}, X::AbstractEmbedding)
+# function tcost(loss::STE, triplet::Tuple{Int,Int,Int}, X::Embedding)
 #     @inbounds i = triplet[1]
 #     @inbounds j = triplet[2]
 #     @inbounds k = triplet[3]
@@ -39,18 +39,18 @@ end
 #     return -log(P)
 # end
 
-function gradient(loss::tSTE, triplets::Triplets, X::AbstractEmbedding)
+function gradient(loss::tSTE, triplets::Triplets, X::Embedding)
 
     K, Q = kernel(loss, X) # Triplet kernel values (in the tSTE loss)
-    
+
     # We need to create an array to prevent race conditions
     # This is the best average solution for small and big Embeddings
     nthreads = Threads.nthreads()
     triplets_range = partition(ntriplets(triplets), nthreads)
-    
+
     C = zeros(Float64, nthreads)
     ∇C = [zeros(Float64, size(X)) for _ in 1:nthreads]
-    
+
     Threads.@threads for tid in 1:nthreads
         C[tid] = tgradient!(loss, triplets, X, K, Q, ∇C[tid], triplets_range[tid])
     end
@@ -60,7 +60,7 @@ function gradient(loss::tSTE, triplets::Triplets, X::AbstractEmbedding)
     # Threads.@threads for t in 1:ntriplets(triplets)
     #     # ∇C[:,:,t] = tgradient(loss, triplets[t], X, K)
     # end
-    
+
     # If the Embedding is big, we can use multiple processes.
     # This requires calling @everywhere using TripletEmbeddings
     # and adding processes through addprocs(),
@@ -76,14 +76,14 @@ end
 function tgradient!(
     loss::tSTE,
     triplets::Triplets,
-    X::AbstractEmbedding,
+    X::Embedding,
     K::Matrix{<:AbstractFloat},
     Q::Matrix{<:AbstractFloat},
     ∇C::Matrix{<:AbstractFloat},
     triplets_range::UnitRange{Int64})
 
     C = 0.0
-    
+
     for t in triplets_range
         @views @inbounds i, j, k = triplets[t]
 
