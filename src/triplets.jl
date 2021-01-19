@@ -60,6 +60,8 @@ y_{ijk} = \cases{
 ```
 """
 function label(X::AbstractMatrix{T}, f::Function) where T <: Real
+    maximum(X) ≠ minimum(X) || throw(ArgumentError("Embedding is constant, no triplets to compute."))
+
     d, n = size(X)
     D = pairwise(SqEuclidean(), X, dims=2)
 

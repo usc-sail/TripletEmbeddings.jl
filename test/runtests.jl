@@ -44,6 +44,8 @@ end
 
     triplets = [(1,2,3), (1,2,5)]
     @test checktriplets(triplets) == false
+
+    @test_throws ArgumentError Triplets(ones(1,10))
 end
 
 @testset "STE.jl" begin
