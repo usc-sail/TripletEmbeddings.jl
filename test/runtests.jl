@@ -32,17 +32,18 @@ end
 
 @testset "triplets.jl" begin
     data = [1 2 3]
+    test_triplets = [Tuple{Int32,Int32,Int32}((3, 2, 1)); Tuple{Int32,Int32,Int32}((1, 2, 3))]
     triplets = Triplets(data)
-    @test triplets.triplets == [(3, 2, 1); (1, 2, 3)]
+    @test triplets.triplets == test_triplets
 
     data = [1 2 3; 1 2 3]
     triplets = Triplets(data)
-    @test triplets.triplets == [(3, 2, 1); (1, 2, 3)]
+    @test triplets.triplets == test_triplets
 
     @test size(triplets) == (2,)
     @test length(triplets) == 2
 
-    triplets = [(1,2,3), (1,2,5)]
+    triplets = [Tuple{Int32,Int32,Int32}((1,2,3)), Tuple{Int32,Int32,Int32}((1,2,5))]
     @test checktriplets(triplets) == false
 
     @test_throws ArgumentError Triplets(ones(1,10))
