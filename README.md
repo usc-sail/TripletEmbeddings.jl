@@ -57,7 +57,7 @@ loss = STE(σ = 1/sqrt(2))
 X = Embedding(size(Y))
 
 @time violations = fit!(loss, triplets, X; verbose=true, max_iterations=1000)
-procrustes!(X, Y)
+procrustes!(X, Y) # Based on the SVD. Since X is d x n, it works even for 1D-embeddings.
 
 dfX = DataFrame(embedding = "X", time = 1:n, value = X[1,:])
 dfY = DataFrame(embedding = "Y", time = 1:n, value = Y[1,:])
@@ -91,7 +91,7 @@ loss = STE(σ = 1/sqrt(2))
 X = Embedding(size(Y))
 
 @time violations = fit!(loss, triplets, X; verbose=true, max_iterations=200)
-procrustes!(X, Y) # Based on the SVD. Since X is d x n, it works even for 1D-embeddings.
+X, tr = procrustes(X, Y) # You can call procrustes to return an affine transformation for out-of-sample embeddings
 
 dfX = DataFrame(embedding = "X", time = 1:n, x = X[1,:], y = X[2,:])
 dfY = DataFrame(embedding = "Y", time = 1:n, x = Y[1,:], y = Y[2,:])
