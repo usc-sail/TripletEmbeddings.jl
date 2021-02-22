@@ -93,8 +93,6 @@ X = Embedding(size(Y))
 @time violations = fit!(loss, triplets, X; verbose=true, max_iterations=200)
 procrustes!(X, Y)
 
-scatter(Y[1,:], Y[2,:]); scatter!(X[1,:], X[2,:])
-
 dfX = DataFrame(embedding = "X", time = 1:n, x = X[1,:], y = X[2,:])
 dfY = DataFrame(embedding = "Y", time = 1:n, x = Y[1,:], y = Y[2,:])
 
