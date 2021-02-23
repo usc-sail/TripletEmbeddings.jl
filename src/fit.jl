@@ -7,7 +7,7 @@ function fit!(
 )
 
     @assert max_iterations >= 10 "Iterations must be at least 10"
-    # @assert maximum([maximum(t) for t in triplets]) == nitems(X)
+    # maximum(getindex.(triplets, [1 2 3])) == nitems(X) || throw(ArgumentError("Number of items to embed must equal to the number of items represented by triplet comparisons"))
 
     C = Inf                      # Cost
     ∇C = zeros(Float64, size(X)) # Gradient

@@ -50,21 +50,6 @@ function gradient(loss::STE, triplets::Triplets, X::Embedding)
         C[tid] = tgradient!(loss, triplets, X, K, ∇C[tid], triplets_range[tid])
     end
 
-    # If the Embedding is small, we can use multithreading over the triplets
-    # ∇C = [zeros(Float64, nitems(X), ndims(X), ntriplets(triplets)) for _ = 1:nthreads]
-    # Threads.@threads for t in 1:ntriplets(triplets)
-    #     # ∇C[:,:,t] = tgradient(loss, triplets[t], X, K)
-    # end
-
-    # If the Embedding is big, we can use multiple processes.
-    # This requires calling @everywhere using TripletEmbeddings
-    # and adding processes through addprocs(),
-    # and using Distributed inside TripletEmbeddings
-    # ∇C = @distributed (+) for t in 1:ntriplets(triplets)
-    #     tgradient(loss, triplets[t], X, K)
-    # end
-    # return -∇C
-
     return sum(C), -sum(∇C)
 end
 
@@ -79,7 +64,7 @@ function tgradient!(
     C = 0.0
 
     for t in triplets_range
-        @views @inbounds i, j, k = triplets[t]
+        @views @inbounds i, j, k = triplets[t][:i], triplets[t][:j], triplets[t][:k]
 
         @inbounds P = K[i,j] / (K[i,j] + K[i,k])
         C += -log(P)

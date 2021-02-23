@@ -11,7 +11,7 @@ using LinearAlgebra
 
 
 export Embedding, ndims, nitems, V, Gram, L,
-       Triplets, ntriplets, checktriplets,
+       Triplet, Triplets, ntriplets, checktriplets,
        STE, tSTE, kernel,
        fit!, gradient, tgradient, tgradient!, cost, tcost,
        procrustes, procrustes!, mse, apply,
