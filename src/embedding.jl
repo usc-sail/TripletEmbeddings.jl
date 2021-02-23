@@ -153,7 +153,7 @@ of a matrix that is pre or post-multiplied by V.
      0.0
 
 """
-V(n::Int) = Matrix(I, n, n) - ones(n,n)/n
+V(n::T) where T <: Integer = Matrix(I, n, n) - ones(n,n)/n
 
 Gram(X::Embedding) = X'X
 
