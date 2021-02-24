@@ -3,20 +3,27 @@ struct STE <: AbstractLoss
     constant::Float64
 
     function STE(;σ::T = 1/sqrt(2)) where T <: Real
-        if σ ≤ 0
-            throw(ArgumentError("σ in STE loss must be > 0"))
-        end
+        σ ≤ 0 || throw(ArgumentError("σ in STE loss must be > 0"))
         new(σ, 1/σ^2)
     end
 
 end
 
+@doc raw"""
+    function kernel(loss::STE, X::Embedding)
+
+Computes:
+
+```math
+K = \exp(\|X_i - X_j\|^2/(2\sigma^2)) \forall (i,j) \in {1,\ldots,n} \times {1,\ldots,n}.
+```
+"""
 function kernel(loss::STE, X::Embedding)
     K = pairwise(SqEuclidean(), X, dims=2)
     c = -loss.constant / 2
 
-    for j in 1:nitems(X), i in 1:nitems(X)
-        @inbounds K[i,j] = exp(c * K[i,j])
+    for ij in eachindex(K)
+        @inbounds K[ij] = exp(c * K[ij])
     end
     return K
 end

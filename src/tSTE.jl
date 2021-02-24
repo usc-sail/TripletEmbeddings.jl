@@ -3,9 +3,7 @@ struct tSTE <: AbstractLoss
     constant::Float64
 
     function tSTE(;α::Int = 3)
-        if α < 1
-            throw(ArumentError("α in tSTE loss must be ≥ 1"))
-        end
+        α < 1 || throw(ArumentError("α in tSTE loss must be ≥ 1"))
         new(α, (α + 1) / α)
     end
 
@@ -17,11 +15,11 @@ function kernel(loss::tSTE, X::Embedding)
 
     constant = ((loss.α + 1) / -2)
 
-    for j in 1:nitems(X), i in 1:nitems(X)
+    for ij in eachindex(K)
         # We compute K[i,j] = (1 + ||x_i - x_j||_2^2/α) ^ (-(α+1)/2)
-        base = (1 + K[i,j] / loss.α)
-        @inbounds Q[i,j] = base ^ -1
-        @inbounds K[i,j] = base ^ constant
+        base = (1 + K[ij] / loss.α)
+        @inbounds Q[ij] = base ^ -1
+        @inbounds K[ij] = base ^ constant
     end
     return K, Q
 end
