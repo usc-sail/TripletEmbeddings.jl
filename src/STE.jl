@@ -21,19 +21,6 @@ function kernel(loss::STE, X::Embedding)
     return K
 end
 
-function tcost(loss::STE, triplet::Tuple{Int,Int,Int}, X::Embedding)
-    @inbounds i = triplet[1]
-    @inbounds j = triplet[2]
-    @inbounds k = triplet[3]
-
-    @inbounds K_ij = exp( -loss.constant * norm(X[i,:] - X[j,:])^2 / 2)
-    @inbounds K_ik = exp( -loss.constant * norm(X[i,:] - X[k,:])^2 / 2)
-
-    @inbounds P = K_ij / (K_ij + K_ik)
-
-    return -log(P)
-end
-
 function gradient(loss::STE, triplets::Triplets, X::Embedding)
 
     K = kernel(loss, X) # Triplet kernel values (in the STE loss)
