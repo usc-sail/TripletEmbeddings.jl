@@ -3,14 +3,14 @@ struct STE <: AbstractLoss
     constant::Float64
 
     function STE(;σ::T = 1/sqrt(2)) where T <: Real
-        σ ≤ 0 || throw(ArgumentError("σ in STE loss must be > 0"))
+        σ > 0 || throw(ArgumentError("σ in STE loss must be > 0"))
         new(σ, 1/σ^2)
     end
 
 end
 
 @doc raw"""
-    function kernel(loss::STE, X::Embedding)
+    function kernel(loss::STE, X::AbstractMatrix)
 
 Computes:
 
@@ -18,7 +18,7 @@ Computes:
 K = \exp(\|X_i - X_j\|^2/(2\sigma^2)) \forall (i,j) \in {1,\ldots,n} \times {1,\ldots,n}.
 ```
 """
-function kernel(loss::STE, X::Embedding)
+function kernel(loss::STE, X::AbstractMatrix)
     K = pairwise(SqEuclidean(), X, dims=2)
     c = -loss.constant / 2
 
@@ -28,7 +28,7 @@ function kernel(loss::STE, X::Embedding)
     return K
 end
 
-function gradient(loss::STE, triplets::Triplets, X::Embedding)
+function gradient(loss::STE, triplets::Triplets, X::AbstractMatrix)
 
     K = kernel(loss, X) # Triplet kernel values (in the STE loss)
 
@@ -41,18 +41,18 @@ function gradient(loss::STE, triplets::Triplets, X::Embedding)
     ∇C = [zeros(Float64, size(X)) for _ in 1:nthreads]
 
     Threads.@threads for tid in 1:nthreads
-        C[tid] = tgradient!(loss, triplets, X, K, ∇C[tid], triplets_range[tid])
+        C[tid] = tgradient!(∇C[tid], loss, triplets, X, K, triplets_range[tid])
     end
 
     return sum(C), -sum(∇C)
 end
 
 function tgradient!(
+    ∇C::Matrix{<:AbstractFloat},
     loss::STE,
     triplets::Triplets,
-    X::Embedding,
+    X::AbstractMatrix,
     K::Matrix{<:AbstractFloat},
-    ∇C::Matrix{<:AbstractFloat},
     triplets_range::UnitRange{Int64})
 
     C = 0.0
@@ -64,12 +64,12 @@ function tgradient!(
         C += -log(P)
 
         for d in 1:ndims(X)
-            @inbounds dx_j = (1 - P) * (X[d,i] - X[d,j])
-            @inbounds dx_k = (1 - P) * (X[d,i] - X[d,k])
+            @inbounds ∂x_j = (1 - P) * (X[d,i] - X[d,j])
+            @inbounds ∂x_k = (1 - P) * (X[d,i] - X[d,k])
 
-            @inbounds ∇C[d,i] += - loss.constant * (dx_j - dx_k)
-            @inbounds ∇C[d,j] +=   loss.constant *  dx_j
-            @inbounds ∇C[d,k] += - loss.constant *  dx_k
+            @inbounds ∇C[d,i] += - loss.constant * (∂x_j - ∂x_k)
+            @inbounds ∇C[d,j] +=   loss.constant *  ∂x_j
+            @inbounds ∇C[d,k] += - loss.constant *  ∂x_k
         end
     end
     return C

@@ -1,19 +1,22 @@
 function fit!(
     loss::AbstractLoss,
-    triplets::Triplets,
+    triplets::Triplets{<:Integer},
     X::Embedding;
+    η::Real=2.0,
     verbose::Bool = true,
+    print_every::Int = 10,
     max_iterations::Int64 = 1000
 )
 
     @assert max_iterations >= 10 "Iterations must be at least 10"
+    @assert 1 ≤ print_every ≤ max_iterations || throw(ArgumentError("print_every should be in the interval [1, max_iterations]"))
+
     # maximum(getindex.(triplets, [1 2 3])) == nitems(X) || throw(ArgumentError("Number of items to embed must equal to the number of items represented by triplet comparisons"))
 
     C = Inf                      # Cost
     ∇C = zeros(Float64, size(X)) # Gradient
 
     tolerance = 1e-7 # convergence tolerance
-    η = 1.0          # learning rate
     best_C = Inf     # best error obtained so far
     best_X = X       # best embedding found so far
 
@@ -48,7 +51,7 @@ function fit!(
         end
 
         # Print out progress
-        if verbose && (niterations % 10 == 0)
+        if verbose && (niterations % print_every == 0)
             # If we have a large number of triplets, computing the number of violations
             # can be costly. Therefore, we only perform this operation every 10 iterations
             # If more details are needed, you can set the environment variable

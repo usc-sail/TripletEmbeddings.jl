@@ -1,11 +1,4 @@
-let triplet = Symbol("#triplet")
-    @eval begin
-        struct Triplet{names,Integer}
-            $triplet::NamedTuple{names,Integer}
-        end
-        Base.parent(t::Triplet) = getfield(t, $(QuoteNode(triplet)))
-    end
-end
+const Triplet{I} = NamedTuple{(:i, :j, :k), Tuple{I, I, I}} where I <: Integer
 
 """
     function Triplet([S::Type{U},] t::NTuple{3,T}) where {U <: Integer, T <: Integer}
@@ -25,48 +18,68 @@ Other constructors:
  - function Triplet(i::Int, j::Int, k::Int)
  - function Triplet(S::DataType, i::Int, j::Int, k::Int)
 """
-Triplet(t::NTuple{3,T}) where T <: Integer = Triplet((i = t[1], j = t[2], k = t[3]))
+Triplet(t::NTuple{3,I}) where I <: Integer = Triplet((i = t[1], j = t[2], k = t[3]))
 
 function Triplet(S::Type{U}, t::NTuple{3,T}) where {U <: Integer, T <: Integer}
     S <: Integer || throw(ArgumentError("S must be a subtype of Integer"))
-    Triplet(NTuple{3,S}(t))
+    Triplet{S}(NTuple{3,S}(t))
 end
 
 function Triplet(t::Vector{T}) where T <: Integer
     length(t) == 3 || throw(ArgumentError("Triplet must be of length 3"))
-    Triplet(NTuple{3,T}(t))
+    Triplet{T}(NTuple{3,T}(t))
 end
 
 function Triplet(S::Type{U}, t::Vector{T}) where {U <: Integer, T <: Integer}
     length(t) == 3 || throw(ArgumentError("Triplet must be of length 3"))
-    Triplet(NTuple{3,S}(t))
+    Triplet{S}(NTuple{3,S}(t))
 end
 
-function Triplet(i::Int, j::Int, k::Int)
-    Triplet(NTuple{3,eltype(i)}((i,j,k)))
+function Triplet(i::I, j::I, k::I) where I <: Integer
+    Triplet{eltype(i)}((i,j,k))
 end
 
-function Triplet(S::Type{U}, i::Int, j::Int, k::Int) where U <: Integer
-    Triplet(NTuple{3,S}((i,j,k)))
+function Triplet(S::Type{U}, i::I, j::I, k::I) where {U <: Integer, I <: Integer}
+    Triplet{S}((i,j,k))
 end
 
-Base.getproperty(t::Triplet, sym::Symbol) = getproperty(parent(t), sym)
-Base.getindex(t::Triplet, sym::Symbol) = getfield(parent(t), sym)
-Base.getindex(t::Triplet, index::Int) = getfield(parent(t), index)
-Base.eltype(t::Triplet) = eltype(t[:i])
-Base.iterate(t::Triplet) = (t[:i], t[:j], t[:k])
-Base.iterate(t::Triplet, index::Int) = t[index]
-Base.indexed_iterate(t::Triplet, index::Int) = t[index]
+Base.show(io::IO, ::Type{Triplet}) = print(io, "Triplet{$(I)}")
 
-function show(io::IO, t::Triplet)
+function Base.show(io::IO, t::Triplet{I}) where I <: Integer
     n = nfields(t)
+    for i = 1:n
+        # if field types aren't concrete, show full type
+        if typeof(getfield(t, i)) !== fieldtype(typeof(t), i)
+            show(io, typeof(t))
+            print(io, "(")
+            show(io, Tuple(t))
+            print(io, ")")
+            return
+        end
+    end
+
     typeinfo = get(io, :typeinfo, Any)
-    print(io, "Triplet{$(eltype(t))}")
-    show(IOContext(io, :typeinfo =>
-                   t isa typeinfo <: NamedTuple ? fieldtype(typeinfo, 1) : Any),
-         getfield(t, 1))
+    print(io, "Triplet{$I}(")
+    for i = 1:n
+        print(io, fieldname(typeof(t),i), " = ")
+        show(IOContext(io, :typeinfo =>
+                       t isa typeinfo <: NamedTuple ? fieldtype(typeinfo, i) : Any),
+             getfield(t, i))
+        if n == 1
+            print(io, ",")
+        elseif i < n
+            print(io, ", ")
+        end
+    end
+    print(io, ")")
 end
 
+
+const Triplets{I} = Vector{Triplet{I}} where I <: Integer
+
+function Base.show(io::IO, ::Type{Triplets{I}}) where I
+    print(io, "Triplets{$(I)}")
+end
 
 """
     Triplets(X::AbstractMatrix{T}[, f::Function = x -> 1, shuffle::Bool = false]) where T <: Real
@@ -88,44 +101,32 @@ This method will optimize the type used for each Triplet (between Int16 and Int6
 Function to generate Triplets from a Vector{Triplet}. To be used only with Stochastic Gradient Descent (SGD).
 
 """
-struct Triplets{Triplet} <: AbstractVector{Triplet}
-    triplets::Vector{Triplet}
+function Triplets(X::AbstractMatrix{T}; f::Function = x -> 1, shuffle::Bool = false, percentage::Int = 100) where T <: Real
+    0 < percentage ≤ 100 || throw(ArgumentError("Percentage of triplets must be in the interval (0, 100]"))
+    triplets = label(X, f, shuffle)[1:floor(Int, end * percentage / 100)]
+    checktriplets(triplets) || throw(AssertionError("Triplets do not contain all items."))
+    return triplets
+end
 
-    function Triplets(X::AbstractMatrix{T}; f::Function = x -> 1, shuffle::Bool = false) where T <: Real
-        triplets = label(X, f, shuffle)
-        checktriplets(triplets) || throw(AssertionError("Triplets do not contain all items."))
-        S = eltype(triplets[1])
-        new{Triplet}(triplets)
-    end
+function Triplets(S::Type{U}, X::AbstractMatrix{T}; f::Function = x -> 1, shuffle::Bool = false, percentage::Int = 100) where {U <: Integer, T <: Real}
+    0 < percentage ≤ 100 || throw(ArgumentError("Percentage of triplets must be in the interval (0, 100]"))
+    triplets = label(X, f, shuffle, S)[1:floor(Int, end * percentage / 100)]
+    checktriplets(triplets) || throw(AssertionError("Triplets do not contain all items."))
+    return triplets
+end
 
-    function Triplets(S::Type{U}, X::AbstractMatrix{T}; f::Function = x -> 1, shuffle::Bool = false) where {U <: Integer, T <: Real}
-        triplets = label(X, f, shuffle; S=S)
-        checktriplets(triplets) || throw(AssertionError("Triplets do not contain all items."))
-        new{Triplet}(triplets)
-    end
-
-    function Triplets(X::AbstractVector{S}; f::Function = x -> 1, shuffle::Bool = false) where S <: Real
-        @assert length(X) > 1 "Number of elements in X must be > 1"
-        Triplets(reshape(X, 1, length(X)))
-    end
-
-    function Triplets(triplets::Vector{Triplet{(:i, :j, :k), NTuple{3, T}}}) where T <: Integer
-        new{Triplet}(triplets)
-    end
+function Triplets(X::AbstractVector{S}; f::Function = x -> 1, shuffle::Bool = false) where S <: Real
+    length(X) > 1 || throw(AssertionError("Number of elements in X must be > 1"))
+    Triplets(reshape(X, 1, length(X)); f = f, shuffle = shuffle)
 end
 
 """
-    checktriplets(triplets::Vector{Triplet}})
+    checktriplets(triplets::Triplets)
 
 Checks whether triplets contains all elements from 1:n, where n is the maximum
 value found in triplets.
 """
-function checktriplets(triplets::Vector{Triplet})
-    # Transform triplets into Matrix{Int32} and call respective function
-    return checktriplets(getindex.(triplets, [1 2 3]))
-end
-
-function checktriplets(triplets::Triplets{Triplet})
+function checktriplets(triplets::Triplets{T}) where T <: Integer
     # Transform triplets into Matrix{Int32} and call respective function
     return checktriplets(getindex.(triplets, [1 2 3]))
 end
@@ -134,12 +135,9 @@ function checktriplets(triplets::Matrix{T}) where T <: Integer
     return sort(unique(triplets)) == 1:maximum(triplets)
 end
 
-
-Base.size(triplets::Triplets) = size(triplets.triplets)
-# Base.getindex(triplets::Triplets, inds...) = Triplets(getindex(triplets.triplets, inds...))
-Base.getindex(triplets::Triplets, inds...) = getindex(triplets.triplets, inds...)
-
-ntriplets(triplets::Triplets) = length(triplets)
+function ntriplets(triplets::Triplets{I}) where I <: Integer
+    length(triplets)
+end
 
 @doc raw"""
     label(X::Matrix{T}, f::Function) where T <: Real
@@ -164,7 +162,7 @@ function label(X::AbstractMatrix{T}, f::Function, shuffle::Bool, S::Type{U}) whe
     d, n = size(X)
     D = pairwise(SqEuclidean(), X, dims=2)
 
-    triplets = Vector{Triplet}(undef, n*binomial(n-1, 2))
+    triplets = Vector{Triplet{S}}(undef, n*binomial(n-1, 2))
     counter = 0
 
     for k = 1:n, j = 1:k-1, i = 1:n
