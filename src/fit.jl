@@ -69,7 +69,7 @@ function fit!(
 end
 
 function percent_violations(triplets::Triplets, X::Embedding)
-    D = pairwise(SqEuclidean(), X, dims=2)
+    D = pairwise(SqEuclidean(), X.X, dims=2)
 
     nviolations = 0
 

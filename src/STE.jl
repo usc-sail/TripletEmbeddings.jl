@@ -12,7 +12,7 @@ struct STE <: AbstractLoss
 end
 
 function kernel(loss::STE, X::Embedding)
-    K = pairwise(SqEuclidean(), X, dims=2)
+    K = pairwise(SqEuclidean(), X.X, dims=2)
     c = -loss.constant / 2
 
     for j in 1:nitems(X), i in 1:nitems(X)
