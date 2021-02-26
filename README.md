@@ -42,8 +42,6 @@ using Random
 using VegaLite
 using StatsFuns
 using DataFrames
-using TableReader
-using Distributions
 using TripletEmbeddings
 
 Random.seed!(4)
