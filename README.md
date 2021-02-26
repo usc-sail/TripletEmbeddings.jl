@@ -42,8 +42,6 @@ using Random
 using VegaLite
 using StatsFuns
 using DataFrames
-using TableReader
-using Distributions
 using TripletEmbeddings
 
 Random.seed!(4)
@@ -101,3 +99,7 @@ vcat(dfX, dfY) |> @vlplot(:point, x = :x, y = :y, color=:embedding, width=600, h
 This code generates the following embedding:
 
 ![1D example](figures/2D.svg)
+
+## Credits
+Original implementation in [Matlab](https://lvdmaaten.github.io/ste/Stochastic_Triplet_Embedding.html) by L. van der Maaten.
+This version is based upon the [Cython](https://github.com/gcr/cython_tste) implementation by [gcr](www.github.com/gcr), with several other optimizations for speed.
