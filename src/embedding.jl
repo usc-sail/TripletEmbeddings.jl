@@ -39,7 +39,7 @@ If eltype(X₀) == Int, an AbstractFloat is forced.
 mutable struct Embedding{T} <: AbstractMatrix{T}
     X::Matrix{T} # Embedding
 
-    function Embedding(d::Int, n::Int; σ::Float64=0.0001)
+    function Embedding(d::Int, n::Int; σ::T=0.0001) where T <: Real
         @assert n ≥ d "n ≥ d is required"
 
         X = σ * randn(d, n)
@@ -47,7 +47,7 @@ mutable struct Embedding{T} <: AbstractMatrix{T}
         new{eltype(X)}(X)
     end
 
-    function Embedding(t::Tuple{Int,Int}; σ::Float64=0.0001)
+    function Embedding(t::Tuple{Int,Int}; σ::T=0.0001) where T <: Real
         @assert t[2] ≥ t[1] "n ≥ d is required"
 
         X = σ * randn(Float64, t)
@@ -55,7 +55,7 @@ mutable struct Embedding{T} <: AbstractMatrix{T}
         new{Float64}(X)
     end
 
-    function Embedding(t::Tuple{Int}; σ::Float64=0.0001)
+    function Embedding(t::Tuple{Int}; σ::T=0.0001) where T <: Real
         X = σ * randn(Float64, 1, t[1])
 
         if maximum(X) > 1e-3
