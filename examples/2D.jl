@@ -2,7 +2,6 @@ using Plots
 using Random
 using VegaLite
 using DataFrames
-using TableReader
 using LinearAlgebra
 using TripletEmbeddings
 
