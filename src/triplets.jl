@@ -1,4 +1,4 @@
-const Triplet{I} = NamedTuple{(:i, :j, :k), Tuple{I, I, I}} where I <: Integer
+const Triplet{T} = NamedTuple{(:i, :j, :k), Tuple{T, T, T}} where T <: Integer
 
 """
     function Triplet([S::Type{U},] t::NTuple{3,T}) where {U <: Integer, T <: Integer}
@@ -18,7 +18,7 @@ Other constructors:
  - function Triplet(i::Int, j::Int, k::Int)
  - function Triplet(S::DataType, i::Int, j::Int, k::Int)
 """
-Triplet(t::NTuple{3,I}) where I <: Integer = Triplet((i = t[1], j = t[2], k = t[3]))
+Triplet(t::NTuple{3,T}) where T <: Integer = Triplet((i = t[1], j = t[2], k = t[3]))
 
 function Triplet(S::Type{U}, t::NTuple{3,T}) where {U <: Integer, T <: Integer}
     S <: Integer || throw(ArgumentError("S must be a subtype of Integer"))
@@ -35,17 +35,17 @@ function Triplet(S::Type{U}, t::Vector{T}) where {U <: Integer, T <: Integer}
     Triplet{S}(NTuple{3,S}(t))
 end
 
-function Triplet(i::I, j::I, k::I) where I <: Integer
+function Triplet(i::T, j::T, k::T) where T <: Integer
     Triplet{eltype(i)}((i,j,k))
 end
 
-function Triplet(S::Type{U}, i::I, j::I, k::I) where {U <: Integer, I <: Integer}
+function Triplet(S::Type{U}, i::T, j::T, k::T) where {U <: Integer, T <: Integer}
     Triplet{S}((i,j,k))
 end
 
-Base.show(io::IO, ::Type{Triplet}) = print(io, "Triplet{$(I)}")
+Base.show(io::IO, ::Type{Triplet}) = print(io, "Triplet{$(T)}")
 
-function Base.show(io::IO, t::Triplet{I}) where I <: Integer
+function Base.show(io::IO, t::Triplet{T}) where T <: Integer
     n = nfields(t)
     for i = 1:n
         # if field types aren't concrete, show full type
@@ -59,7 +59,7 @@ function Base.show(io::IO, t::Triplet{I}) where I <: Integer
     end
 
     typeinfo = get(io, :typeinfo, Any)
-    print(io, "Triplet{$I}(")
+    print(io, "Triplet{$T}(")
     for i = 1:n
         print(io, fieldname(typeof(t),i), " = ")
         show(IOContext(io, :typeinfo =>
@@ -75,10 +75,10 @@ function Base.show(io::IO, t::Triplet{I}) where I <: Integer
 end
 
 
-const Triplets{I} = Vector{Triplet{I}} where I <: Integer
+const Triplets{T} = Vector{Triplet{T}} where T <: Integer
 
-function Base.show(io::IO, ::Type{Triplets{I}}) where I
-    print(io, "Triplets{$(I)}")
+function Base.show(io::IO, ::Type{Triplets{T}}) where T
+    print(io, "Triplets{$(T)}")
 end
 
 """
@@ -135,7 +135,7 @@ function checktriplets(triplets::Matrix{T}) where T <: Integer
     return sort(unique(triplets)) == 1:maximum(triplets)
 end
 
-function ntriplets(triplets::Triplets{I}) where I <: Integer
+function ntriplets(triplets::Triplets{T}) where T <: Integer
     length(triplets)
 end
 
