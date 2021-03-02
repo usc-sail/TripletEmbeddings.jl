@@ -72,12 +72,12 @@ function fit!(
 end
 
 function percent_violations(triplets::Triplets, X::Embedding)
-    D = pairwise(SqEuclidean(), X, dims=2)
+    D = pairwise(SqEuclidean(), X.X, dims=2)
 
     nviolations = 0
 
-    for t = 1:ntriplets(triplets)
-        nviolations += D[triplets[t][1], triplets[t][2]] > D[triplets[t][1], triplets[t][3]]
+    for t in triplets
+        nviolations += D[t[:i], t[:j]] > D[t[:i], t[:k]]
     end
 
     return nviolations/ntriplets(triplets)
