@@ -2,7 +2,7 @@ function fit!(
     loss::AbstractLoss,
     triplets::Triplets{<:Integer},
     X::Embedding;
-    η::Real=2.0,
+    η::Real=1.0,
     verbose::Bool = true,
     print_every::Int = 10,
     max_iterations::Int64 = 1000
