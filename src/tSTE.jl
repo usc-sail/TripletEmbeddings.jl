@@ -9,8 +9,8 @@ struct tSTE <: AbstractLoss
 
 end
 
-function kernel(loss::tSTE, X::AbstractMatrix)
-    K = pairwise(SqEuclidean(), X, dims=2)
+function kernel(loss::tSTE, X::Embedding)
+    K = pairwise(SqEuclidean(), X.X, dims=2)
     Q = zeros(Float64, nitems(X), nitems(X))
 
     constant = ((loss.α + 1) / -2)

@@ -18,8 +18,8 @@ Computes:
 K = \exp(\|X_i - X_j\|^2/(2\sigma^2)) \forall (i,j) \in {1,\ldots,n} \times {1,\ldots,n}.
 ```
 """
-function kernel(loss::STE, X::AbstractMatrix)
-    K = pairwise(SqEuclidean(), X, dims=2)
+function kernel(loss::STE, X::Embedding)
+    K = pairwise(SqEuclidean(), X.X, dims=2)
     c = -loss.constant / 2
 
     for ij in eachindex(K)
