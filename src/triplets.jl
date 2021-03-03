@@ -41,7 +41,7 @@ function Triplet(S::Type{U}, i::T, j::T, k::T) where {U <: Integer, T <: Integer
     Triplet{S}((i,j,k))
 end
 
-function Base.show(io::IO, t::Triplet{T}) where T <: Integer
+function Base.show(io::IO, ::MIME"text/plain", t::Triplet{T}) where T <: Integer
     n = nfields(t)
     for i = 1:n
         # if field types aren't concrete, show full type
