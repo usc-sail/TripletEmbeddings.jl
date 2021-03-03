@@ -41,39 +41,46 @@ function Triplet(S::Type{U}, i::T, j::T, k::T) where {U <: Integer, T <: Integer
     Triplet{S}((i,j,k))
 end
 
-function Base.show(io::IO, ::MIME"text/plain", t::Triplet{T}) where T <: Integer
-    n = nfields(t)
-    for i = 1:n
-        # if field types aren't concrete, show full type
-        if typeof(getfield(t, i)) !== fieldtype(typeof(t), i)
-            show(io, typeof(t))
-            print(io, "(")
-            show(io, Tuple(t))
-            print(io, ")")
-            return
-        end
-    end
+function Base.show(io::IO, t::Triplet{T}) where T <: Integer
+    print(io, "Triplet{$T}(i = $(t.i), j = $(t.j), k = $(t.k))")
+end
 
-    typeinfo = get(io, :typeinfo, Any)
-    print(io, "Triplet{$T}(")
-    for i = 1:n
-        print(io, fieldname(typeof(t),i), " = ")
-        show(IOContext(io, :typeinfo =>
-                       t isa typeinfo <: NamedTuple ? fieldtype(typeinfo, i) : Any),
-             getfield(t, i))
-        if n == 1
-            print(io, ",")
-        elseif i < n
-            print(io, ", ")
-        end
-    end
-    print(io, ")")
+function Base.show(io::IO, ::MIME"text/plain", t::Triplet{T}) where T <: Integer
+    print(io, "Triplet{$T}(i = $(t.i), j = $(t.j), k = $(t.k))")
+end
+
+function Base.show(io::IO, ::Type{Triplet})
+    print(io, "Triplet")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", ::Type{Triplet})
+    print(io, "Triplet")
+end
+
+function Base.show(io::IO, ::Type{Triplet{T}}) where T <: Integer
+    print(io, "Triplet{$T}")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", ::Type{Triplet{T}}) where T <: Integer
+    print(io, "Triplet{$T}")
 end
 
 
 const Triplets{T} = Vector{Triplet{T}} where T <: Integer
 
-function Base.show(io::IO, ::Type{Triplets{T}}) where T
+function Base.show(io::IO, ::Type{Triplets})
+    print(io, "Triplets")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", ::Type{Triplets})
+    print(io, "Triplets")
+end
+
+function Base.show(io::IO, ::Type{Triplets{T}}) where T <: Integer
+    print(io, "Triplets{$(T)}")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", ::Type{Triplets{T}}) where T <: Integer
     print(io, "Triplets{$(T)}")
 end
 
