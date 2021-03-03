@@ -43,6 +43,8 @@ function Triplet(S::Type{U}, i::T, j::T, k::T) where {U <: Integer, T <: Integer
     Triplet{S}((i,j,k))
 end
 
+Triplet() = Triplet(0, 0, 0)
+
 Base.show(io::IO, ::Type{Triplet}) = print(io, "Triplet{$(T)}")
 
 function Base.show(io::IO, t::Triplet{T}) where T <: Integer
@@ -119,6 +121,8 @@ function Triplets(X::AbstractVector{S}; f::Function = x -> 1, shuffle::Bool = fa
     length(X) > 1 || throw(AssertionError("Number of elements in X must be > 1"))
     Triplets(reshape(X, 1, length(X)); f = f, shuffle = shuffle)
 end
+
+Triplets() = Triplets{Int8}(undef, 0)
 
 """
     checktriplets(triplets::Triplets)
