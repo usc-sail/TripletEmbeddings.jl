@@ -18,8 +18,6 @@ Other constructors:
  - function Triplet(i::Int, j::Int, k::Int)
  - function Triplet(S::DataType, i::Int, j::Int, k::Int)
 """
-Triplet(t::NTuple{3,T}) where T <: Integer = Triplet((i = t[1], j = t[2], k = t[3]))
-
 function Triplet(S::Type{U}, t::NTuple{3,T}) where {U <: Integer, T <: Integer}
     S <: Integer || throw(ArgumentError("S must be a subtype of Integer"))
     Triplet{S}(NTuple{3,S}(t))
@@ -42,10 +40,6 @@ end
 function Triplet(S::Type{U}, i::T, j::T, k::T) where {U <: Integer, T <: Integer}
     Triplet{S}((i,j,k))
 end
-
-Triplet() = Triplet(0, 0, 0)
-
-Base.show(io::IO, ::Type{Triplet}) = print(io, "Triplet{$(T)}")
 
 function Base.show(io::IO, t::Triplet{T}) where T <: Integer
     n = nfields(t)
