@@ -213,3 +213,39 @@ function triplettype(n::Int)
     end
     return S
 end
+
+# Random sampling of triplets
+function triplet_index(number_of_items::Int, index::Int)
+    counter = 0
+
+    for k = 1:number_of_items, j = 1:k-1, i = 1:number_of_items
+        if i != j && i != k
+            counter +=1
+            if counter == index
+                return (i, j, k)
+            end
+        end
+    end
+end
+
+function triplet_indices(number_of_items::Int, indices::Vector{Int})
+    indices = sort(indices)
+    index = 1
+    counter = 0
+
+    triplets = Vector{NTuple{3,triplettype(length(indices))}}(undef, length(indices))
+
+    for k = 1:number_of_items, j = 1:k-1, i = 1:number_of_items
+        if i != j && i != k
+            counter +=1
+            if counter == indices[index]
+                triplets[index] = (i, j, k)
+                index += 1
+                if index > length(indices)
+                    break
+                end
+            end
+        end
+    end
+    return triplets
+end
