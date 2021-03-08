@@ -196,6 +196,10 @@ end
 
 function label(X::AbstractMatrix{T}, f::Function, shuffle::Bool) where T <: Real
     d, n = size(X)
+    label(X, f, shuffle, triplettype(n))
+end
+
+function triplettype(n::Int)
     S = if typemax(Int16) > (n * binomial(n-1, 2))
         Int16
     elseif typemax(UInt16) > (n * binomial(n-1, 2))
@@ -207,5 +211,5 @@ function label(X::AbstractMatrix{T}, f::Function, shuffle::Bool) where T <: Real
     else
         Int64
     end
-    label(X, f, shuffle, S)
+    return S
 end
