@@ -230,6 +230,8 @@ end
 
 function triplet_indices(number_of_items::Int, indices::Vector{Int})
     indices = sort(indices)
+    indices[end] ≤ number_of_items * binomial(number_of_items - 1, 2) || throw(ArgumentError("Some indices are larger than the total number of triplets."))
+
     index = 1
     counter = 0
 
