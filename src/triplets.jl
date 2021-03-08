@@ -18,6 +18,8 @@ Other constructors:
  - function Triplet(i::Int, j::Int, k::Int)
  - function Triplet(S::DataType, i::Int, j::Int, k::Int)
 """
+Triplet(t::NTuple{3,T}) where T <: Integer = Triplet((i = t[1], j = t[2], k = t[3]))
+
 function Triplet(S::Type{U}, t::NTuple{3,T}) where {U <: Integer, T <: Integer}
     S <: Integer || throw(ArgumentError("S must be a subtype of Integer"))
     Triplet{S}(NTuple{3,S}(t))
@@ -41,46 +43,41 @@ function Triplet(S::Type{U}, i::T, j::T, k::T) where {U <: Integer, T <: Integer
     Triplet{S}((i,j,k))
 end
 
+Base.show(io::IO, ::Type{Triplet}) = print(io, "Triplet{$(T)}")
+
 function Base.show(io::IO, t::Triplet{T}) where T <: Integer
-    print(io, "Triplet{$T}(i = $(t.i), j = $(t.j), k = $(t.k))")
-end
+    n = nfields(t)
+    for i = 1:n
+        # if field types aren't concrete, show full type
+        if typeof(getfield(t, i)) !== fieldtype(typeof(t), i)
+            show(io, typeof(t))
+            print(io, "(")
+            show(io, Tuple(t))
+            print(io, ")")
+            return
+        end
+    end
 
-function Base.show(io::IO, ::MIME"text/plain", t::Triplet{T}) where T <: Integer
-    print(io, "Triplet{$T}(i = $(t.i), j = $(t.j), k = $(t.k))")
-end
-
-function Base.show(io::IO, ::Type{Triplet})
-    print(io, "Triplet")
-end
-
-function Base.show(io::IO, ::MIME"text/plain", ::Type{Triplet})
-    print(io, "Triplet")
-end
-
-function Base.show(io::IO, ::Type{Triplet{T}}) where T <: Integer
-    print(io, "Triplet{$T}")
-end
-
-function Base.show(io::IO, ::MIME"text/plain", ::Type{Triplet{T}}) where T <: Integer
-    print(io, "Triplet{$T}")
+    typeinfo = get(io, :typeinfo, Any)
+    print(io, "Triplet{$T}(")
+    for i = 1:n
+        print(io, fieldname(typeof(t),i), " = ")
+        show(IOContext(io, :typeinfo =>
+                       t isa typeinfo <: NamedTuple ? fieldtype(typeinfo, i) : Any),
+             getfield(t, i))
+        if n == 1
+            print(io, ",")
+        elseif i < n
+            print(io, ", ")
+        end
+    end
+    print(io, ")")
 end
 
 
 const Triplets{T} = Vector{Triplet{T}} where T <: Integer
 
-function Base.show(io::IO, ::Type{Triplets})
-    print(io, "Triplets")
-end
-
-function Base.show(io::IO, ::MIME"text/plain", ::Type{Triplets})
-    print(io, "Triplets")
-end
-
-function Base.show(io::IO, ::Type{Triplets{T}}) where T <: Integer
-    print(io, "Triplets{$(T)}")
-end
-
-function Base.show(io::IO, ::MIME"text/plain", ::Type{Triplets{T}}) where T <: Integer
+function Base.show(io::IO, ::Type{Triplets{T}}) where T
     print(io, "Triplets{$(T)}")
 end
 
@@ -122,8 +119,6 @@ function Triplets(X::AbstractVector{S}; f::Function = x -> 1, shuffle::Bool = fa
     length(X) > 1 || throw(AssertionError("Number of elements in X must be > 1"))
     Triplets(reshape(X, 1, length(X)); f = f, shuffle = shuffle)
 end
-
-Triplets() = Triplets{Int8}(undef, 0)
 
 """
     checktriplets(triplets::Triplets)
@@ -201,6 +196,10 @@ end
 
 function label(X::AbstractMatrix{T}, f::Function, shuffle::Bool) where T <: Real
     d, n = size(X)
+    label(X, f, shuffle, triplettype(n))
+end
+
+function triplettype(n::Int)
     S = if typemax(Int16) > (n * binomial(n-1, 2))
         Int16
     elseif typemax(UInt16) > (n * binomial(n-1, 2))
@@ -212,5 +211,5 @@ function label(X::AbstractMatrix{T}, f::Function, shuffle::Bool) where T <: Real
     else
         Int64
     end
-    label(X, f, shuffle, S)
+    return S
 end
