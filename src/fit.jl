@@ -3,6 +3,7 @@ function fit!(
     triplets::Triplets,
     X::Embedding;
     verbose::Bool = true,
+    print_every::Int = 10,
     max_iterations::Int64 = 1000
 )
 
@@ -48,7 +49,7 @@ function fit!(
         end
 
         # Print out progress
-        if verbose && (niterations % 10 == 0)
+        if verbose && (niterations % print_every == 0)
             # If we have a large number of triplets, computing the number of violations
             # can be costly. Therefore, we only perform this operation every 10 iterations
             # If more details are needed, you can set the environment variable

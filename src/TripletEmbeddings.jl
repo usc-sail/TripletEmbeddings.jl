@@ -8,10 +8,11 @@ using StatsFuns
 using Statistics: mean
 using SparseArrays
 using LinearAlgebra
+using InvertedIndices
 
 
 export Embedding, ndims, nitems, V, Gram, L,
-       Triplet, Triplets, ntriplets, checktriplets,
+       Triplet, Triplets, ntriplets, checktriplets, sampletriplet, sampletriplets,
        STE, tSTE, kernel,
        fit!, gradient, tgradient, tgradient!, cost, tcost,
        procrustes, procrustes!, mse, apply,

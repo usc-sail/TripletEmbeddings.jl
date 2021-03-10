@@ -43,7 +43,9 @@ function Triplet(S::Type{U}, i::T, j::T, k::T) where {U <: Integer, T <: Integer
     Triplet{S}((i,j,k))
 end
 
-Base.show(io::IO, ::Type{Triplet}) = print(io, "Triplet{$(T)}")
+function Base.show(io::IO, ::Type{Triplet{T}}) where T <: Integer
+    print(io, "Triplet{$(T)}")
+end
 
 function Base.show(io::IO, t::Triplet{T}) where T <: Integer
     n = nfields(t)
@@ -214,40 +216,43 @@ function triplettype(n::Int)
     return S
 end
 
-# Random sampling of triplets
-function triplet_index(number_of_items::Int, index::Int)
-    counter = 0
+"""
+    sampletriplet([rng], n)
 
-    for k = 1:number_of_items, j = 1:k-1, i = 1:number_of_items
-        if i != j && i != k
-            counter +=1
-            if counter == index
-                return (i, j, k)
-            end
-        end
-    end
+Draw a triplet of distinct integers between 1 and `n` without replacement.
+
+Optionally specify a random number generator `rng` as the first argument
+(defaults to `Random.GLOBAL_RNG`).
+
+This function return a NTuple{3,Int}, _not_ a Triplet{T}.
+
+"""
+function sampletriplet(rng::AbstractRNG, n::Int)
+    i = rand(rng, 1:n)
+    j = rand(rng, 1:n-1)
+    k = rand(rng, 1:n)
+
+    return (i, i == j ? n : j, (k == i || k == j) ? rand(rng, (1:n)[Not(i,j)]) : k)
 end
 
-function triplet_indices(number_of_items::Int, indices::Vector{Int})
-    indices = sort(indices)
-    indices[end] ≤ number_of_items * binomial(number_of_items - 1, 2) || throw(ArgumentError("Some indices are larger than the total number of triplets."))
+sampletriplet(n::Int) = sampletriplet(Random.GLOBAL_RNG, n)
 
-    index = 1
-    counter = 0
 
-    triplets = Vector{NTuple{3,triplettype(length(indices))}}(undef, length(indices))
+"""
+    sampletriplets([rng], n)
 
-    for k = 1:number_of_items, j = 1:k-1, i = 1:number_of_items
-        if i != j && i != k
-            counter +=1
-            if counter == indices[index]
-                triplets[index] = (i, j, k)
-                index += 1
-                if index > length(indices)
-                    break
-                end
-            end
-        end
-    end
+Draw `number_of_triplets` triplets of distinct integers between 1 and `n` without replacement.
+
+Optionally specify a random number generator `rng` as the first argument
+(defaults to `Random.GLOBAL_RNG`).
+
+This function returns a Vector{NTuple{3,Int}}, _not_ a Vector{Triplet{T}}.
+
+"""
+function sampletriplets(rng::AbstractRNG, n::Int, number_of_triplets::Int)
+    S = triplettype(number_of_triplets)
+    triplets = [sampletriplet(n) for _ in 1:number_of_triplets]
     return triplets
 end
+
+sampletriplets(n::Int, number_of_triplets::Int) = sampletriplets(Random.GLOBAL_RNG, n, number_of_triplets)

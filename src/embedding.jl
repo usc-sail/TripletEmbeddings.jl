@@ -85,6 +85,11 @@ end
 
 Base.size(X::Embedding) = size(X.X)
 Base.getindex(X::Embedding, inds...) = getindex(X.X, inds...)
+function Base.Vector(X::Embedding)
+  size(X, 1) == 1 || throw(ArgumentError("X must be of size (1, n)."))
+
+  return dropdims(Matrix(X.X'), dims=2)
+end
 
 """
     ndims(X::Matrix)
