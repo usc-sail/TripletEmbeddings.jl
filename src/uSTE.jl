@@ -1,16 +1,29 @@
-struct STE <: AbstractLoss
+"""
+   uSTE <: AbstractLoss
+
+_U_nbiased Stochastic Triplet Embedding loss.
+
+This loss implements the paper "Learning with Noisy Labels" for STE. The paper
+may be found in https://proceedings.neurips.cc/paper/2013/file/3871bd64012152bfb53fdf04b401193f-Paper.pdf
+"""
+struct uSTE <: AbstractLoss
     σ::Real
     constant::Float64
+    ρ::Float64 # We assume that ρ₊ and ρ₋ are the same, since in the triplet embedding case classes depend on how the objects are displayed to be labeled
 
-    function STE(;σ::T = 1/sqrt(2)) where T <: Real
+    function uSTE(;ρ::Float64=0.4, σ::T = 1/sqrt(2)) where T <: Real
         σ > 0 || throw(ArgumentError("σ in STE loss must be > 0"))
-        new(σ, 1/σ^2)
+        0 < ρ < 1 || throw(ArgumentError("ρ in uSTE loss must be in the (0, 1) interval."))
+        new(σ, 1/σ^2, ρ)
     end
+end
 
+function Base.show(io::IO, mime::MIME{Symbol("text/plain")}, loss::uSTE)
+    println("uSTE(σ = $(round(loss.σ, digits=3)), constant = $(round(loss.constant, digits=3)), ρ = $(round(loss.ρ, digits=3)))")
 end
 
 @doc raw"""
-    function kernel(loss::STE, X::AbstractMatrix)
+    function kernel(loss::uSTE, X::AbstractMatrix)
 
 Computes:
 
@@ -18,7 +31,7 @@ Computes:
 K = \exp(\|X_i - X_j\|^2/(2\sigma^2)) \forall (i,j) \in {1,\ldots,n} \times {1,\ldots,n}.
 ```
 """
-function kernel(loss::STE, X::Embedding)
+function kernel(loss::uSTE, X::Embedding)
     K = pairwise(SqEuclidean(), X.X, dims=2)
     c = -loss.constant / 2
 
@@ -28,7 +41,7 @@ function kernel(loss::STE, X::Embedding)
     return K
 end
 
-function gradient(loss::STE, triplets, X::AbstractMatrix)
+function gradient(loss::uSTE, triplets::Triplets, X::AbstractMatrix)
 
     K = kernel(loss, X) # Triplet kernel values (in the STE loss)
 
@@ -59,39 +72,6 @@ function tgradient!(
 
     for t in triplets_range
         @views @inbounds i, j, k = triplets[t][:i], triplets[t][:j], triplets[t][:k]
-
-        @inbounds P = K[i,j] / (K[i,j] + K[i,k])
-        C += -log(P)
-
-        for d in 1:ndims(X)
-            @inbounds ∂x_j = (1 - P) * (X[d,i] - X[d,j])
-            @inbounds ∂x_k = (1 - P) * (X[d,i] - X[d,k])
-
-            @inbounds ∇C[d,i] += - loss.constant * (∂x_j - ∂x_k)
-            @inbounds ∇C[d,j] +=   loss.constant *  ∂x_j
-            @inbounds ∇C[d,k] += - loss.constant *  ∂x_k
-        end
-    end
-    return C
-end
-
-
-function tgradient!(
-    ∇C::Matrix{<:AbstractFloat},
-    loss::STE,
-    triplets::LabeledTriplets,
-    X::AbstractMatrix,
-    K::Matrix{<:AbstractFloat},
-    triplets_range::UnitRange{Int64})
-
-    C = 0.0
-
-    for t in triplets_range
-        @views @inbounds i, j, k = if triplets[t][:y] == -1
-            triplets[t][:i], triplets[t][:j], triplets[t][:k]
-        else
-            triplets[t][:i], triplets[t][:k], triplets[t][:j]
-        end
 
         @inbounds P = K[i,j] / (K[i,j] + K[i,k])
         C += -log(P)

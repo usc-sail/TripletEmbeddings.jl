@@ -24,7 +24,7 @@ function kernel(loss::tSTE, X::Embedding)
     return K, Q
 end
 
-function gradient(loss::tSTE, triplets::Triplets, X::AbstractMatrix)
+function gradient(loss::tSTE, triplets, X::AbstractMatrix)
 
     K, Q = kernel(loss, X) # Triplet kernel values (in the tSTE loss)
 
@@ -56,6 +56,39 @@ function tgradient!(
 
     for t in triplets_range
         @views @inbounds i, j, k = triplets[t][:i], triplets[t][:j], triplets[t][:k]
+
+        @inbounds P = K[i,j] / (K[i,j] + K[i,k])
+        C += -log(P)
+
+        for d in 1:ndims(X)
+            @inbounds ∂x_j = (1 - P) * Q[i,j] * (X[d,i] - X[d,j])
+            @inbounds ∂x_k = (1 - P) * Q[i,k] * (X[d,i] - X[d,k])
+
+            @inbounds ∇C[d,i] +=   loss.constant * (∂x_k - ∂x_j)
+            @inbounds ∇C[d,j] +=   loss.constant *  ∂x_j
+            @inbounds ∇C[d,k] += - loss.constant *  ∂x_k
+        end
+    end
+    return C
+end
+
+function tgradient!(
+    ∇C::Matrix{<:AbstractFloat},
+    loss::tSTE,
+    triplets::LabeledTriplets,
+    X::AbstractMatrix,
+    K::Matrix{<:AbstractFloat},
+    Q::Matrix{<:AbstractFloat},
+    triplets_range::UnitRange{Int64})
+
+    C = 0.0
+
+    for t in triplets_range
+        @views @inbounds i, j, k = if triplets[t][:y] == -1
+            triplets[t][:i], triplets[t][:j], triplets[t][:k]
+        else
+            triplets[t][:i], triplets[t][:k], triplets[t][:j]
+        end
 
         @inbounds P = K[i,j] / (K[i,j] + K[i,k])
         C += -log(P)

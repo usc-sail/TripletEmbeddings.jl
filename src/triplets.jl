@@ -145,7 +145,7 @@ function checktriplets(triplets::Matrix{T}) where T <: Integer
     return sort(unique(triplets)) == 1:maximum(triplets)
 end
 
-function ntriplets(triplets::Triplets{T}) where T <: Integer
+function ntriplets(triplets::Triplets)
     length(triplets)
 end
 
@@ -432,7 +432,7 @@ function checktriplets(triplets::Matrix{T}) where T <: Integer
     return sort(unique(triplets)) == 1:maximum(triplets)
 end
 
-function ntriplets(triplets::LabeledTriplets{T}) where T <: Integer
+function ntriplets(triplets::LabeledTriplets)
     length(triplets)
 end
 

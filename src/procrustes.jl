@@ -111,6 +111,10 @@ function procrustes(X::Matrix{T1}, Y::AbstractMatrix{T2}) where {T1 <: Real, T2 
     return apply(transform, X), transform
 end
 
-function mse(X::Embedding{T}, Y::Matrix{T}) where T <: Real
+function mse(X::Embedding{T}, Y::AbstractMatrix{T}) where T <: Real
+    return norm(X.X - Y)^2/(nitems(X) * ndims(X))
+end
+
+function mse(X::AbstractMatrix{T}, Y::AbstractMatrix{T}) where T <: Real
     return norm(X.X - Y)^2/(nitems(X) * ndims(X))
 end
