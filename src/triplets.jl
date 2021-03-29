@@ -18,7 +18,7 @@ Other constructors:
  - function Triplet(i::Int, j::Int, k::Int)
  - function Triplet(S::DataType, i::Int, j::Int, k::Int)
 """
-Triplet(t::NTuple{3,T}) where T <: Integer = Triplet((i = t[1], j = t[2], k = t[3]))
+Triplet(t::NTuple{3,T}) where T <: Integer = Triplet{T}((i = t[1], j = t[2], k = t[3]))
 
 function Triplet(S::Type{U}, t::NTuple{3,T}) where {U <: Integer, T <: Integer}
     S <: Integer || throw(ArgumentError("S must be a subtype of Integer"))
@@ -36,7 +36,7 @@ function Triplet(S::Type{U}, t::Vector{T}) where {U <: Integer, T <: Integer}
 end
 
 function Triplet(i::T, j::T, k::T) where T <: Integer
-    Triplet{eltype(i)}((i,j,k))
+    Triplet{T}((i,j,k))
 end
 
 function Triplet(S::Type{U}, i::T, j::T, k::T) where {U <: Integer, T <: Integer}
@@ -168,6 +168,7 @@ y_{ijk} = \cases{
 """
 function label(X::AbstractMatrix{T}, f::Function, shuffle::Bool, S::Type{U}) where {T <: Real, U <: Integer}
     maximum(X) ≠ minimum(X) || throw(ArgumentError("Embedding is constant, no triplets to compute."))
+    sum(isnan.(X)) == 0 || throw(DomainError("Embedding X has NaNs values."))
 
     d, n = size(X)
     D = pairwise(SqEuclidean(), X, dims=2)
@@ -206,17 +207,17 @@ end
 
 function label(X::AbstractMatrix{T}, f::Function, shuffle::Bool) where T <: Real
     d, n = size(X)
-    label(X, f, shuffle, triplettype(n))
+    label(X, f, shuffle, tripletstype(n))
 end
 
-function triplettype(n::Int)
-    S = if typemax(Int16) > (n * binomial(n-1, 2))
+function tripletstype(n::Int)
+    S = if typemax(Int16) > n
         Int16
-    elseif typemax(UInt16) > (n * binomial(n-1, 2))
+    elseif typemax(UInt16) > n
         UInt16
-    elseif typemax(Int32) > (n * binomial(n-1, 2))
+    elseif typemax(Int32) > n
         Int32
-    elseif typemax(UInt32) > (n * binomial(n-1, 2))
+    elseif typemax(UInt32) > n
         UInt32
     else
         Int64
@@ -247,7 +248,7 @@ sampletriplet(n::Int) = sampletriplet(Random.GLOBAL_RNG, n)
 
 
 """
-    sampletriplets([rng], n)
+    sampletriplets([rng], n, number_of_triplets)
 
 Draw `number_of_triplets` triplets of distinct integers between 1 and `n` without replacement.
 
@@ -258,7 +259,7 @@ This function returns a Vector{NTuple{3,Int}}, _not_ a Vector{Triplet{T}}.
 
 """
 function sampletriplets(rng::AbstractRNG, n::Int, number_of_triplets::Int)
-    S = triplettype(number_of_triplets)
+    S = tripletstype(number_of_triplets)
     triplets = [sampletriplet(n) for _ in 1:number_of_triplets]
     return triplets
 end
@@ -454,7 +455,8 @@ y_{ijk} = \cases{
 ```
 """
 function label(::Type{LabeledTriplet}, X::AbstractMatrix{T}, f::Function, shuffle::Bool, U::Type{V}) where {T <: Real, V <: Integer}
-    maximum(X) ≠ minimum(X) || throw(ArgumentError("Embedding is constant, no triplets to compute."))
+    maximum(X) ≠ minimum(X) || throw(DomainError("Embedding is constant, no triplets to compute."))
+    sum(isnan.(X)) == 0 || throw(DomainError("Embedding X has NaNs values."))
 
     d, n = size(X)
     D = pairwise(SqEuclidean(), X, dims=2)
@@ -485,5 +487,5 @@ end
 
 function label(::Type{LabeledTriplet}, X::AbstractMatrix{T}, f::Function, shuffle::Bool) where T <: Real
     d, n = size(X)
-    label(LabeledTriplet, X, f, shuffle, triplettype(n))
+    label(LabeledTriplet, X, f, shuffle, tripletstype(n))
 end
