@@ -13,6 +13,7 @@ using InvertedIndices
 
 export Embedding, ndims, nitems, V, Gram, L,
        Triplet, Triplets, ntriplets, checktriplets, sampletriplet, sampletriplets,
+       LabeledTriplet, LabeledTriplets,
        STE, tSTE, kernel,
        fit!, gradient, tgradient, tgradient!, cost, tcost,
        procrustes, procrustes!, mse, apply,
