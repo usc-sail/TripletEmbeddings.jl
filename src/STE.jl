@@ -35,7 +35,7 @@ function gradient(loss::STE, triplets, X::AbstractMatrix)
     # We need to create an array to prevent race conditions
     # This is the best average solution for small and big Embeddings
     nthreads = Threads.nthreads()
-    triplets_range = partition(ntriplets(triplets), nthreads)
+    triplets_range = partition(length(triplets), nthreads)
 
     C = zeros(Float64, nthreads)
     ∇C = [zeros(Float64, size(X)) for _ in 1:nthreads]

@@ -9,17 +9,17 @@ may be found in https://proceedings.neurips.cc/paper/2013/file/3871bd64012152bfb
 struct uSTE <: AbstractLoss
     σ::Real
     constant::Float64
-    ρ::Float64 # We assume that ρ₊ and ρ₋ are the same, since in the triplet embedding case classes depend on how the objects are displayed to be labeled
+    ρ::Dict{Int,Float64}
 
-    function uSTE(;ρ::Float64=0.4, σ::T = 1/sqrt(2)) where T <: Real
+    function uSTE(;σ::S = 1/sqrt(2), ρ::Dict{Int,Float64} = Dict(-1 => 0.4, +1 => 0.4)) where {S <: Real, T <: AbstractFloat}
         σ > 0 || throw(ArgumentError("σ in STE loss must be > 0"))
-        0 < ρ < 1 || throw(ArgumentError("ρ in uSTE loss must be in the (0, 1) interval."))
+        (0 ≤ ρ[-1] < 1 && 0 ≤ ρ[+1] < 1) || throw(ArgumentError("ρ₊ in uSTE loss must be in the (0, 1) interval."))
         new(σ, 1/σ^2, ρ)
     end
 end
 
-function Base.show(io::IO, mime::MIME{Symbol("text/plain")}, loss::uSTE)
-    println("uSTE(σ = $(round(loss.σ, digits=3)), constant = $(round(loss.constant, digits=3)), ρ = $(round(loss.ρ, digits=3)))")
+function Base.show(io::IO, loss::uSTE)
+    println("uSTE(σ = $(round(loss.σ, digits=3)), constant = $(round(loss.constant, digits=3)), ρ₊ = $(round(loss.ρ[1], digits=3)), ρ₋ = $(round(loss.ρ[-1], digits=3)))")
 end
 
 @doc raw"""
@@ -41,48 +41,75 @@ function kernel(loss::uSTE, X::Embedding)
     return K
 end
 
-function gradient(loss::uSTE, triplets::Triplets, X::AbstractMatrix)
+function gradient(loss::uSTE, triplets::LabeledTriplets, X::AbstractMatrix)
 
     K = kernel(loss, X) # Triplet kernel values (in the STE loss)
 
     # We need to create an array to prevent race conditions
     # This is the best average solution for small and big Embeddings
     nthreads = Threads.nthreads()
-    triplets_range = partition(ntriplets(triplets), nthreads)
+    triplets_range = partition(length(triplets), nthreads)
 
-    C = zeros(Float64, nthreads)
-    ∇C = [zeros(Float64, size(X)) for _ in 1:nthreads]
+    C⁺ = zeros(Float64, nthreads)
+    ∇C⁺ = [zeros(Float64, size(X)) for _ in 1:nthreads]
 
     Threads.@threads for tid in 1:nthreads
-        C[tid] = tgradient!(∇C[tid], loss, triplets, X, K, triplets_range[tid])
+        C⁺[tid] = tgradient!(∇C⁺[tid], loss, triplets, X, K, triplets_range[tid]; flip_triplets=false)
     end
 
-    return sum(C), -sum(∇C)
+    C⁻ = zeros(Float64, nthreads)
+    ∇C⁻ = [zeros(Float64, size(X)) for _ in 1:nthreads]
+
+    Threads.@threads for tid in 1:nthreads
+        C⁻[tid] = tgradient!(∇C⁻[tid], loss, triplets, X, K, triplets_range[tid]; flip_triplets=true)
+    end
+
+    return (sum(C⁺) + sum(C⁻)) / (1 - sum(values(loss.ρ))), -(sum(∇C⁺) + sum(∇C⁻)) / (1 - sum(values(loss.ρ)))
 end
 
 function tgradient!(
     ∇C::Matrix{<:AbstractFloat},
-    loss::STE,
-    triplets::Triplets,
+    loss::uSTE,
+    triplets::LabeledTriplets,
     X::AbstractMatrix,
     K::Matrix{<:AbstractFloat},
-    triplets_range::UnitRange{Int64})
+    triplets_range::UnitRange{Int64};
+    flip_triplets::Bool = false,
+    )
 
     C = 0.0
 
     for t in triplets_range
-        @views @inbounds i, j, k = triplets[t][:i], triplets[t][:j], triplets[t][:k]
+        @inbounds i, j, k = if triplets[t][:y] == -1
+            triplets[t][:i], triplets[t][:j], triplets[t][:k]
+        else
+            triplets[t][:i], triplets[t][:k], triplets[t][:j]
+        end
+
+        if flip_triplets
+            i, j, k = i, k, j
+        end
 
         @inbounds P = K[i,j] / (K[i,j] + K[i,k])
-        C += -log(P)
+        C += if flip_triplets
+            -loss.ρ[triplets[t][:y]] * log(P)
+        else
+            -(1 - loss.ρ[-triplets[t][:y]]) * log(P)
+        end
 
         for d in 1:ndims(X)
             @inbounds ∂x_j = (1 - P) * (X[d,i] - X[d,j])
             @inbounds ∂x_k = (1 - P) * (X[d,i] - X[d,k])
 
-            @inbounds ∇C[d,i] += - loss.constant * (∂x_j - ∂x_k)
-            @inbounds ∇C[d,j] +=   loss.constant *  ∂x_j
-            @inbounds ∇C[d,k] += - loss.constant *  ∂x_k
+            if flip_triplets
+                @inbounds ∇C[d,i] += - loss.constant * (∂x_j - ∂x_k) * loss.ρ[triplets[t][:y]]
+                @inbounds ∇C[d,j] +=   loss.constant *  ∂x_j         * loss.ρ[triplets[t][:y]]
+                @inbounds ∇C[d,k] += - loss.constant *  ∂x_k         * loss.ρ[triplets[t][:y]]
+            else
+                @inbounds ∇C[d,i] += - loss.constant * (∂x_j - ∂x_k) * (1 - loss.ρ[-triplets[t][:y]])
+                @inbounds ∇C[d,j] +=   loss.constant *  ∂x_j         * (1 - loss.ρ[-triplets[t][:y]])
+                @inbounds ∇C[d,k] += - loss.constant *  ∂x_k         * (1 - loss.ρ[-triplets[t][:y]])
+            end
         end
     end
     return C

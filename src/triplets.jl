@@ -145,10 +145,6 @@ function checktriplets(triplets::Matrix{T}) where T <: Integer
     return sort(unique(triplets)) == 1:maximum(triplets)
 end
 
-function ntriplets(triplets::Triplets)
-    length(triplets)
-end
-
 @doc raw"""
     label(X::Matrix{T}, f::Function) where T <: Real
 
@@ -427,14 +423,6 @@ value found in triplets.
 function checktriplets(triplets::LabeledTriplets{T}) where T <: Integer
     # Transform triplets into Matrix{Int32} and call respective function
     return checktriplets(getindex.(triplets, [1 2 3]))
-end
-
-function checktriplets(triplets::Matrix{T}) where T <: Integer
-    return sort(unique(triplets)) == 1:maximum(triplets)
-end
-
-function ntriplets(triplets::LabeledTriplets)
-    length(triplets)
 end
 
 @doc raw"""

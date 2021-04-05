@@ -32,21 +32,28 @@ end
 
 @testset "triplets.jl" begin
     data = [1 2 3]
-    test_triplets = [Tuple{Int32,Int32,Int32}((3, 2, 1)); Tuple{Int32,Int32,Int32}((1, 2, 3))]
+    test_triplets = [Triplet(Int16, 3, 2, 1); Triplet(Int16, 1, 2, 3)]
     triplets = Triplets(data)
-    @test triplets.triplets == test_triplets
+    @test triplets == test_triplets
 
     data = [1 2 3; 1 2 3]
     triplets = Triplets(data)
-    @test triplets.triplets == test_triplets
+    @test triplets == test_triplets
 
     @test size(triplets) == (2,)
     @test length(triplets) == 2
 
-    triplets = [Tuple{Int32,Int32,Int32}((1,2,3)), Tuple{Int32,Int32,Int32}((1,2,5))]
+    triplets = [Triplet(Int32, 1,2,3), Triplet(1,2,5)]
     @test checktriplets(triplets) == false
 
     @test_throws ArgumentError Triplets(ones(1,10))
+
+    c = 0
+    triplets = sampletriplet.(fill(1000, 1000000))
+    for t in triplets
+        c += t[1] == t[2] || t[1] == t[3]
+    end
+    @test c == 0
 end
 
 @testset "STE.jl" begin
