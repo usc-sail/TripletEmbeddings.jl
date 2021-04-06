@@ -79,8 +79,8 @@ end
 
 const Triplets{T} = Vector{Triplet{T}} where T <: Integer
 
-function Base.show(io::IO, ::Type{Triplets{T}}) where T
-    print(io, "Triplets{$(T)}")
+function Base.show(io::IO, ::Type{Triplets})
+    print(io, "Triplets")
 end
 
 """
