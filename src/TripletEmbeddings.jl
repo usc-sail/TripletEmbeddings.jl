@@ -14,7 +14,7 @@ using InvertedIndices
 export Embedding, ndims, nitems, V, Gram, L,
        Triplet, Triplets, checktriplets, sampletriplet, sampletriplets,
        LabeledTriplet, LabeledTriplets,
-       STE, uSTE, tSTE, kernel,
+       STE, ρSTE, tSTE, kernel,
        fit!, gradient, tgradient, tgradient!, cost, tcost,
        procrustes, procrustes!, mse, apply,
        show
@@ -27,7 +27,7 @@ include("triplets.jl")
 include("utilities.jl")
 include("losses.jl")
 include("STE.jl")
-include("uSTE.jl")
+include("rhoSTE.jl")
 include("tSTE.jl")
 include("fit.jl")
 include("procrustes.jl")

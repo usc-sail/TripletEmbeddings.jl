@@ -1,29 +1,29 @@
 """
-   uSTE <: AbstractLoss
+   ρSTE <: AbstractLoss
 
 _U_nbiased Stochastic Triplet Embedding loss.
 
 This loss implements the paper "Learning with Noisy Labels" for STE. The paper
 may be found in https://proceedings.neurips.cc/paper/2013/file/3871bd64012152bfb53fdf04b401193f-Paper.pdf
 """
-struct uSTE <: AbstractLoss
+struct ρSTE <: AbstractLoss
     σ::Real
     constant::Float64
     ρ::Dict{Int,Float64}
 
-    function uSTE(;σ::S = 1/sqrt(2), ρ::Dict{Int,Float64} = Dict(-1 => 0.4, +1 => 0.4)) where {S <: Real, T <: AbstractFloat}
+    function ρSTE(;σ::S = 1/sqrt(2), ρ::Dict{Int,Float64} = Dict(-1 => 0.4, +1 => 0.4)) where {S <: Real, T <: AbstractFloat}
         σ > 0 || throw(ArgumentError("σ in STE loss must be > 0"))
-        (0 ≤ ρ[-1] < 1 && 0 ≤ ρ[+1] < 1) || throw(ArgumentError("ρ₊ in uSTE loss must be in the (0, 1) interval."))
+        (0 ≤ ρ[-1] < 1 && 0 ≤ ρ[+1] < 1) || throw(ArgumentError("ρ₊ in ρSTE loss must be in the (0, 1) interval."))
         new(σ, 1/σ^2, ρ)
     end
 end
 
-function Base.show(io::IO, loss::uSTE)
-    println("uSTE(σ = $(round(loss.σ, digits=3)), constant = $(round(loss.constant, digits=3)), ρ₊ = $(round(loss.ρ[1], digits=3)), ρ₋ = $(round(loss.ρ[-1], digits=3)))")
+function Base.show(io::IO, loss::ρSTE)
+    println("ρSTE(σ = $(round(loss.σ, digits=3)), constant = $(round(loss.constant, digits=3)), ρ₊ = $(round(loss.ρ[1], digits=3)), ρ₋ = $(round(loss.ρ[-1], digits=3)))")
 end
 
 @doc raw"""
-    function kernel(loss::uSTE, X::AbstractMatrix)
+    function kernel(loss::ρSTE, X::AbstractMatrix)
 
 Computes:
 
@@ -31,7 +31,7 @@ Computes:
 K = \exp(\|X_i - X_j\|^2/(2\sigma^2)) \forall (i,j) \in {1,\ldots,n} \times {1,\ldots,n}.
 ```
 """
-function kernel(loss::uSTE, X::Embedding)
+function kernel(loss::ρSTE, X::Embedding)
     K = pairwise(SqEuclidean(), X.X, dims=2)
     c = -loss.constant / 2
 
@@ -41,7 +41,7 @@ function kernel(loss::uSTE, X::Embedding)
     return K
 end
 
-function gradient(loss::uSTE, triplets::LabeledTriplets, X::AbstractMatrix)
+function gradient(loss::ρSTE, triplets::LabeledTriplets, X::AbstractMatrix)
 
     K = kernel(loss, X) # Triplet kernel values (in the STE loss)
 
@@ -69,7 +69,7 @@ end
 
 function tgradient!(
     ∇C::Matrix{<:AbstractFloat},
-    loss::uSTE,
+    loss::ρSTE,
     triplets::LabeledTriplets,
     X::AbstractMatrix,
     K::Matrix{<:AbstractFloat},
