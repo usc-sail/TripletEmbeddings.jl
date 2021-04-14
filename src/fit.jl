@@ -10,55 +10,54 @@ function fit!(
     @assert max_iterations >= 10 "Iterations must be at least 10"
     # @assert maximum([maximum(t) for t in triplets]) == nitems(X)
 
-    C = Inf                      # Cost
-    ∇C = zeros(Float64, size(X)) # Gradient
+    R = fill(Inf, max_iterations) # risk
+    ∇R = zeros(Float64, size(X))  # gradient
 
     tolerance = 1e-7 # convergence tolerance
     η = 1.0          # learning rate
-    best_C = Inf     # best error obtained so far
     best_X = X       # best embedding found so far
 
     # Perform main iterations
-    niterations = 0   # Number of iterations (so far)
-    nincrements = 0   # Number of increments
+    i = 1   # Number of iterations (so far)
+    lr_increments = 0   # Number of learning rate increments
     pviolations = 0.0 # Percentage of violations
 
-    while niterations < max_iterations && nincrements < 5
-        niterations += 1
-        old_C = C
+    while i < max_iterations && lr_increments < 5
+        i += 1
 
-        # Calculate gradient descent and cost
-        C, ∇C = gradient(loss, triplets, X)
+        # Calculate gradient descent and risk
+        R[i], ∇R = gradient(loss, triplets, X)
+        if any(isnan.(∇R))
+            break
+        end
 
         # Update the embedding according to the gradient
-        X.X = X.X .- (η / length(triplets) * nitems(X)) * ∇C
-        # X.X = X.X/norm(X.X)
+        X.X = X.X .- (η / length(triplets) * nitems(X)) * ∇R
 
-        if C < best_C
-            best_C = C
+        if R[i-1] < minimum(R)
             best_X = X
         end
 
         # Update learning rate
-        if old_C > C + tolerance
-            nincrements = 0
+        if R[i-1] > R[i] + tolerance
+            lr_increments = 0
             η *= 1.01
         else
-            nincrements += 1
+            lr_increments += 1
             η *= 0.5
         end
 
         # Print out progress
-        if verbose && (niterations % print_every == 0)
+        if verbose && (i % print_every == 0)
             # If we have a large number of triplets, computing the number of violations
             # can be costly. Therefore, we only perform this operation every 10 iterations
             # If more details are needed, you can set the environment variable
             # JULIA_DEBUG=TripletEmbeddings before starting Julia.
             pviolations = percent_violations(triplets, X)
-            @info @sprintf "loss = %s, iteration = %d, cost = %.2f, misclassifications = %.2f%%, ||∇ₓR|| = %.2f" typeof(loss) niterations C/size(triplets)[1] 100 * pviolations norm(∇C)
+            @info @sprintf "loss = %s, iteration = %d, risk = %.6f, misclassifications = %.2f%%, ||∇ₓR|| = %.6f" typeof(loss) i R[i]/length(triplets) 100 * pviolations norm(∇R)
         end
 
-        @debug "Iteration = $niterations, Cost = $C, nincrements = $nincrements" X.X percent_violations(triplets, X)
+        @debug "Iteration = $i, risk = $(R[i]), lr_increments = $lr_increments" X.X percent_violations(triplets, X)
     end
 
     if !verbose
