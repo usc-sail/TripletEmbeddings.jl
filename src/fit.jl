@@ -54,7 +54,7 @@ function fit!(
             # If more details are needed, you can set the environment variable
             # JULIA_DEBUG=TripletEmbeddings before starting Julia.
             pviolations = percent_violations(triplets, X)
-            @info @sprintf "loss = %s, iteration = %d, risk = %.6f, misclassifications = %.2f%%, ||∇ₓR|| = %.6f" typeof(loss) i R[i]/length(triplets) 100 * pviolations norm(∇R)
+            @info @sprintf "loss = %s, iteration = %d, risk = %.6f, misclassifications = %.2f%%, ||∇ₓR|| = %.6f" typeof(loss) i R[i]/length(triplets) 100 * pviolations norm(∇R/length(triplets))
         end
 
         @debug "Iteration = $i, risk = $(R[i]), lr_increments = $lr_increments" X.X percent_violations(triplets, X)
